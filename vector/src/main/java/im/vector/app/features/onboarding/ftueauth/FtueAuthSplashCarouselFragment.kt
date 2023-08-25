@@ -36,6 +36,7 @@ import im.vector.app.databinding.FragmentFtueSplashCarouselBinding
 import im.vector.app.features.VectorFeatures
 import im.vector.app.features.onboarding.OnboardingAction
 import im.vector.app.features.onboarding.OnboardingFlow
+import im.vector.app.features.onboarding.SingleUrl
 import im.vector.app.features.settings.VectorPreferences
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -61,6 +62,14 @@ class FtueAuthSplashCarouselFragment :
         return FragmentFtueSplashCarouselBinding.inflate(inflater, container, false)
     }
 
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+           if (SingleUrl.isLinkOpen){
+                splashSubmit(vectorFeatures.isOnboardingAlreadyHaveAccountSplashEnabled())
+            }else{
+                alreadyHaveAnAccount()
+            }
+    }
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupViews()

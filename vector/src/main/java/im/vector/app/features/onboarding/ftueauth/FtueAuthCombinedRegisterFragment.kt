@@ -16,15 +16,18 @@
 
 package im.vector.app.features.onboarding.ftueauth
 
+import android.app.Activity
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.autofill.HintConstants
 import androidx.core.text.isDigitsOnly
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
+import com.airbnb.mvrx.activityViewModel
 import com.airbnb.mvrx.withState
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
@@ -38,20 +41,37 @@ import im.vector.app.core.extensions.hidePassword
 import im.vector.app.core.extensions.isMatrixId
 import im.vector.app.core.extensions.onTextChange
 import im.vector.app.core.extensions.realignPercentagesToParent
+import im.vector.app.core.extensions.registerStartForActivityResult
 import im.vector.app.core.extensions.setOnFocusLostListener
 import im.vector.app.core.extensions.setOnImeDoneListener
 import im.vector.app.core.extensions.toReducedUrl
+import im.vector.app.core.utils.ensureProtocol
+import im.vector.app.core.utils.ensureTrailingSlash
 import im.vector.app.databinding.FragmentFtueCombinedRegisterBinding
 import im.vector.app.features.login.LoginMode
 import im.vector.app.features.login.SSORedirectRouterActivity
 import im.vector.app.features.login.SocialLoginButtonsView
+import im.vector.app.features.login.qr.QrCodeLoginAction
 import im.vector.app.features.login.render
 import im.vector.app.features.onboarding.OnboardingAction
 import im.vector.app.features.onboarding.OnboardingAction.AuthenticateAction
 import im.vector.app.features.onboarding.OnboardingViewEvents
 import im.vector.app.features.onboarding.OnboardingViewState
+import im.vector.app.features.onboarding.SingleUrl
+import im.vector.app.features.qrcode.QrCodeScannerActivity
+import im.vector.app.features.usercode.UserCodeShareViewEvents
+import im.vector.app.features.usercode.UserCodeSharedViewModel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okio.IOException
+import org.checkerframework.nonapi.io.github.classgraph.json.JSONUtils
+import org.checkerframework.org.apache.commons.lang3.SystemUtils
+import org.json.JSONObject
 import org.matrix.android.sdk.api.auth.SSOAction
 import org.matrix.android.sdk.api.failure.isHomeserverUnavailable
 import org.matrix.android.sdk.api.failure.isInvalidPassword
@@ -61,6 +81,7 @@ import org.matrix.android.sdk.api.failure.isRegistrationDisabled
 import org.matrix.android.sdk.api.failure.isUsernameInUse
 import org.matrix.android.sdk.api.failure.isWeakPassword
 import reactivecircus.flowbinding.android.widget.textChanges
+import timber.log.Timber
 
 private const val MINIMUM_PASSWORD_LENGTH = 8
 
@@ -91,6 +112,18 @@ class FtueAuthCombinedRegisterFragment :
         views.createAccountInput.setOnFocusLostListener(viewLifecycleOwner) {
             viewModel.handle(OnboardingAction.UserNameEnteredAction.Registration(views.createAccountInput.content()))
         }
+
+        if (!SingleUrl.serviceUrl.isNullOrEmpty()){
+            updateAddress(SingleUrl.serviceUrl)
+        }
+    }
+
+    /**
+     * 升级服务器
+     */
+    private fun updateAddress(address: String) {
+        viewModel.handle(OnboardingAction.HomeServerChange.EditHomeServer(address))
+        views.createAccountInvite.setText(SingleUrl.inviteCode)
     }
 
     private fun canSubmit(account: CharSequence, password: CharSequence): Boolean {
@@ -107,14 +140,52 @@ class FtueAuthCombinedRegisterFragment :
         combine(views.createAccountInput.editText().textChanges(), views.createAccountPasswordInput.editText().textChanges()) { account, password ->
             views.createAccountSubmit.isEnabled = canSubmit(account, password)
         }.launchIn(viewLifecycleOwner.lifecycleScope)
+        views.showUserCodeScanButton.debouncedClicks {
+            QrCodeScannerActivity.startForResult(requireActivity(), scanActivityResultLauncher)
+        }
+    }
+    private val scanActivityResultLauncher = registerStartForActivityResult { activityResult ->
+        if (activityResult.resultCode == Activity.RESULT_OK) {
+            val scannedQrCode = QrCodeScannerActivity.getResultText(activityResult.data)
+            val wasQrCode = QrCodeScannerActivity.getResultIsQrCode(activityResult.data)
+
+            Timber.d("Scanned QR code: $scannedQrCode, was QR code: $wasQrCode")
+            if (wasQrCode && !scannedQrCode.isNullOrBlank()) {
+                onQrCodeScanned(scannedQrCode)
+            } else {
+                onQrCodeScannerFailed()
+            }
+        }
+    }
+    private fun onQrCodeScanned(scannedQrCode: String) {
+        if (scannedQrCode.contains("element") && scannedQrCode.contains("rgs_token=")){
+            val urlLinkAfter: String = scannedQrCode.toString().substringAfter("rgs_token=")
+            Timber.d("Scanned QR code: $urlLinkAfter")
+            if (!urlLinkAfter.isNullOrBlank()){
+                views.createAccountInvite.setText(urlLinkAfter)
+            }else{
+                Toast.makeText(activity,"无效的二维码",Toast.LENGTH_SHORT).show()
+            }
+        }else{
+            Toast.makeText(activity,R.string.invalid_qr_code_uri,Toast.LENGTH_SHORT).show()
+        }
+
     }
 
+    private fun onQrCodeScannerFailed() {
+        // The user scanned something unexpected, so we try scanning again.
+        // This seems to happen particularly with the large QRs needed for rendezvous
+        // especially when the QR is partially off the screen
+        Timber.d("QrCodeLoginInstructionsFragment.onQrCodeScannerFailed - showing scanner again")
+        QrCodeScannerActivity.startForResult(requireActivity(), scanActivityResultLauncher)
+    }
     private fun submit() {
         withState(viewModel) { state ->
             cleanupUi()
 
             val login = views.createAccountInput.content()
             val password = views.createAccountPasswordInput.content()
+            val inviteCode = views.createAccountInviteInput.content()
 
             // This can be called by the IME action, so deal with empty cases
             var error = 0
@@ -137,7 +208,50 @@ class FtueAuthCombinedRegisterFragment :
                     login.isMatrixId() -> AuthenticateAction.RegisterWithMatrixId(login, password, initialDeviceName)
                     else -> AuthenticateAction.Register(login, password, initialDeviceName)
                 }
-                viewModel.handle(registerAction)
+                if (inviteCode.isEmpty()) {
+                    viewModel.handle(registerAction)
+                }else{
+//                    viewModel.handle(AuthenticateAction.RegisterInviteCode(login, password, inviteCode, initialDeviceName))
+                    val server = views.selectedServerName.text
+                    val url = "https://$server/_synapse/admin/v1/registration_tokens/$inviteCode"
+                    //创建request请求对象
+                    val request = Request.Builder()
+                            .url(url)
+                            //.method()方法与.get()方法选取1种即可
+                            .method("GET", null)
+                            .build()
+
+
+                    //创建call并调用enqueue()方法实现网络请求
+                    OkHttpClient().newCall(request)
+                            .enqueue(object : Callback {
+                                override fun onFailure(call: Call, e: IOException) {
+                                    println("error")
+                                }
+                                override fun onResponse(call: Call, response: Response) {
+                                    println("aaaaaaaaa-->$response")
+                                    val responseCode = response.code
+                                    println("responseCode-->$responseCode")
+                                    if (responseCode == 200 ){
+                                        val responseBody = response.body
+                                        println("responseBody-->$responseBody")
+                                        val jsonString: String? = responseBody?.string()
+                                        println("jsonString-->$jsonString")
+                                        val jsonObject = JSONObject(jsonString.toString())
+                                        val token: String = jsonObject.getString("token")
+                                        println("jsonObject-->${token}")
+                                        viewModel.handle(registerAction)
+                                        SingleUrl.inviteCode = inviteCode;
+                                    }else{
+                                        println("错误-->")
+                                        activity?.runOnUiThread {
+                                            Toast.makeText(activity, "invitation code error", Toast.LENGTH_SHORT).show()
+                                        }
+                                    }
+                                }
+                            })
+                }
+
             }
         }
     }
@@ -146,6 +260,7 @@ class FtueAuthCombinedRegisterFragment :
         views.createAccountSubmit.hideKeyboard()
         views.createAccountInput.error = null
         views.createAccountPasswordInput.error = null
+        views.createAccountInviteInput.error = null
     }
 
     override fun resetViewModel() {

@@ -21,24 +21,35 @@ import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.core.text.toSpannable
 import androidx.core.view.isVisible
 import dagger.hilt.android.AndroidEntryPoint
 import im.vector.app.R
 import im.vector.app.core.animations.play
+import im.vector.app.core.di.ActiveSessionHolder
 import im.vector.app.core.utils.isAnimationEnabled
 import im.vector.app.core.utils.styleMatchingText
 import im.vector.app.databinding.FragmentFtueAccountCreatedBinding
 import im.vector.app.features.onboarding.OnboardingAction
 import im.vector.app.features.onboarding.OnboardingViewEvents
 import im.vector.app.features.onboarding.OnboardingViewState
+import im.vector.app.features.onboarding.SingleUrl
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import timber.log.Timber
+import java.io.IOException
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class FtueAuthAccountCreatedFragment :
         AbstractFtueAuthFragment<FragmentFtueAccountCreatedBinding>() {
 
     private var hasPlayedConfetti = false
-
+    @Inject lateinit var activeSessionHolder: ActiveSessionHolder
     override fun getBinding(inflater: LayoutInflater, container: ViewGroup?): FragmentFtueAccountCreatedBinding {
         return FragmentFtueAccountCreatedBinding.inflate(inflater, container, false)
     }
@@ -46,8 +57,42 @@ class FtueAuthAccountCreatedFragment :
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         setupViews()
-    }
+        val url = "${activeSessionHolder.getActiveSession().sessionParams.homeServerConnectionConfig.homeServerUriBase}_synapse/admin/v1/record_registration_token/${SingleUrl.inviteCode}"
+        if (!SingleUrl.inviteCode.isNullOrEmpty()){recodeInvite(url)}
 
+    }
+    private fun recodeInvite(url: String){
+        //val url: String = "${activeSessionHolder.getActiveSession().sessionParams.homeServerConnectionConfig.homeServerUriBase}_synapse/admin/v1/record_registration_token"
+        //_synapse/admin/v1/record_registration_token
+        val request = Request.Builder()
+                .url(url)
+                .addHeader("Authorization","Bearer ${activeSessionHolder.getActiveSession().sessionParams.credentials.accessToken}")
+                //.method()方法与.get()方法选取1种即可
+                .method("GET", null)
+                .build()
+
+        //创建call并调用enqueue()方法实现网络请求
+        OkHttpClient().newCall(request)
+                .enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        println("error")
+                    }
+                    override fun onResponse(call: Call, response: Response) {
+                        Timber.i("response=${response}")
+                        val responseCode = response.code
+                        Timber.i("responseCode=${responseCode}")
+                        if (responseCode == 200 ){
+                            val responseBody = response.body
+                            Timber.i("responseBody=${responseBody}")
+                            val jsonString: String? = responseBody?.string()
+                            Timber.i("jsonString=${jsonString}")
+                            SingleUrl.inviteCode = ""
+                        }else{
+                            println("错误-->")
+                        }
+                    }
+                })
+    }
     private fun setupViews() {
         views.accountCreatedPersonalize.debouncedClicks { viewModel.handle(OnboardingAction.PersonalizeProfile) }
         views.accountCreatedTakeMeHome.debouncedClicks { viewModel.handle(OnboardingAction.PostViewEvent(OnboardingViewEvents.OnTakeMeHome)) }

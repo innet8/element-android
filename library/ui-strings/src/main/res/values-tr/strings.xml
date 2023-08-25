@@ -1734,4 +1734,5 @@
     <string name="action_view_threads">Konuları Görüntüle</string>
     <string name="initial_sync_request_title">Başlangıç eşitleme isteği</string>
     <string name="all_chats">Tüm Sohbetler</string>
+    <string name="invite_code">Davet Kodu</string>
 </resources>

@@ -19,12 +19,18 @@ package im.vector.app.features.home
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.drawable.BitmapDrawable
 import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.os.Parcelable
+import android.provider.MediaStore
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.widget.Toast
 import androidx.core.view.GravityCompat
 import androidx.core.view.isVisible
 import androidx.drawerlayout.widget.DrawerLayout
@@ -64,6 +70,7 @@ import im.vector.app.features.matrixto.OriginOfMatrixTo
 import im.vector.app.features.navigation.Navigator
 import im.vector.app.features.notifications.NotificationDrawerManager
 import im.vector.app.features.onboarding.AuthenticationDescription
+import im.vector.app.features.onboarding.SingleUrl
 import im.vector.app.features.permalink.NavigationInterceptor
 import im.vector.app.features.permalink.PermalinkHandler
 import im.vector.app.features.permalink.PermalinkHandler.Companion.MATRIX_TO_CUSTOM_SCHEME_URL_BASE
@@ -91,12 +98,22 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.parcelize.Parcelize
+import okhttp3.Call
+import okhttp3.Callback
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import org.checkerframework.org.apache.commons.lang3.SystemUtils
+import org.json.JSONObject
 import org.matrix.android.sdk.api.session.permalinks.PermalinkService
 import org.matrix.android.sdk.api.session.sync.InitialSyncStrategy
 import org.matrix.android.sdk.api.session.sync.SyncRequestState
 import org.matrix.android.sdk.api.session.sync.initialSyncStrategy
 import org.matrix.android.sdk.api.util.MatrixItem
 import timber.log.Timber
+import java.io.File
+import java.io.FileOutputStream
+import java.io.IOException
 import javax.inject.Inject
 
 @Parcelize
@@ -660,7 +677,12 @@ class HomeActivity :
                 true
             }
             R.id.menu_home_invite_friends -> {
-                launchInviteFriends()
+                views.inviteTitle.text = getString(R.string.invite_friends)
+                var homeServerUriBase = activeSessionHolder.getActiveSession().sessionParams.homeServerConnectionConfig.homeServerUriBase
+                val url: String = "${homeServerUriBase}_synapse/admin/v1/registration_link"
+                Timber.w("url=$url")
+                Timber.w("homeServerUriBase=${homeServerUriBase}")
+                getInviteLink(url)
                 true
             }
             R.id.menu_home_qr -> {
@@ -671,6 +693,92 @@ class HomeActivity :
         }
     }
 
+    private fun showInvitePopup(appInviteLink: String){
+        runOnUiThread {
+            views.inviteClose.setOnClickListener(View.OnClickListener { hideInvitePopup() })
+            views.inviteQr.setOnClickListener(View.OnClickListener { saveInviteQrImage(views.inviteQr) })
+            views.inviteContent.visibility = View.VISIBLE
+            //http://localhost:8008/_matrix/static/?
+            // open_url=
+            // element://synapse.huofu.vip:8009?rgs_token=RRYxOqa
+            val url: String = activeSessionHolder.getActiveSession().sessionParams.homeServerUrlBase
+            views.inviteLink.text = "${url}_matrix/static/?open_url="+ appInviteLink
+            views.inviteQr.setData(appInviteLink)
+        }
+
+
+    }
+    private fun getInviteLink(url: String){
+        Timber.i("token=${activeSessionHolder.getActiveSession().sessionParams.credentials.accessToken}")
+        val request = Request.Builder()
+                .url(url)
+                .addHeader("Authorization","Bearer ${activeSessionHolder.getActiveSession().sessionParams.credentials.accessToken}")
+                //.method()方法与.get()方法选取1种即可
+                .method("GET", null)
+                .build()
+
+        //创建call并调用enqueue()方法实现网络请求
+        OkHttpClient().newCall(request)
+                .enqueue(object : Callback {
+                    override fun onFailure(call: Call, e: IOException) {
+                        println("error")
+                        runOnUiThread{
+                            Toast.makeText(applicationContext, "network eero", Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                    override fun onResponse(call: Call, response: Response) {
+                        println("aaaaaaaaa-->$response")
+                        val responseCode = response.code
+                        println("responseCode-->$responseCode")
+                        if (responseCode == 200 ){
+                            val responseBody = response.body
+                            println("responseBody-->$responseBody")
+                            val jsonString: String? = responseBody?.string()
+                            println("jsonString-->$jsonString")
+                            val jsonObject = JSONObject(jsonString.toString())
+                            val appInviteLink: String = jsonObject.getString("app_invite_link")
+                            showInvitePopup(appInviteLink)
+                        }else{
+                            println("错误-->")
+                            runOnUiThread{
+                                Toast.makeText(applicationContext, "eero", Toast.LENGTH_SHORT).show()
+                            }
+                        }
+                    }
+                })
+    }
+    private fun hideInvitePopup(){
+        views.inviteContent.visibility = View.GONE
+    }
+    private fun saveInviteQrImage(view: View){
+        val bitmap = createViewBitmap(view)
+        // 创建存储目录
+        val storageDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)
+        // 创建图像文件
+        val timestamp = System.currentTimeMillis()
+        val imageFile = File(storageDir, "image_$timestamp.jpg")
+        try {
+            val outputStream = FileOutputStream(imageFile)
+            bitmap?.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
+            outputStream.flush()
+            outputStream.close()
+            Toast.makeText(this, "Image saved to gallery", Toast.LENGTH_SHORT).show()
+        } catch (e: IOException) {
+            e.printStackTrace()
+            Toast.makeText(this, "Failed to save image", Toast.LENGTH_SHORT).show()
+        }
+
+    }
+    /** 创建位图 */
+    private fun createViewBitmap(view: View): Bitmap? {
+        val bitmap = Bitmap.createBitmap(
+                view.width, view.height,
+                Bitmap.Config.ARGB_8888
+        )
+        val canvas = Canvas(bitmap)
+        view.draw(canvas)
+        return bitmap
+    }
     private fun launchQrCode() {
         startActivity(UserCodeActivity.newIntent(this, sharedActionViewModel.session.myUserId))
     }

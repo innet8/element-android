@@ -2846,4 +2846,5 @@
     <string name="direct_room_user_list_only_invite_one_email">你一次仅能邀请一个电子邮件</string>
     <string name="started_a_voice_broadcast">开始语音广播</string>
     <string name="_resume">继续</string>
+    <string name="invite_code">邀请码</string>
 </resources>

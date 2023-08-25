@@ -41,6 +41,7 @@ import im.vector.app.features.analytics.plan.ViewRoom
 import im.vector.app.features.home.HomeActivity
 import im.vector.app.features.home.ShortcutsHandler
 import im.vector.app.features.notifications.NotificationDrawerManager
+import im.vector.app.features.onboarding.SingleUrl
 import im.vector.app.features.pin.UnlockedActivity
 import im.vector.app.features.pin.lockscreen.crypto.LockScreenKeyRepository
 import im.vector.app.features.pin.lockscreen.pincode.PinCodeHelper
@@ -62,6 +63,7 @@ import kotlinx.parcelize.Parcelize
 import org.matrix.android.sdk.api.failure.GlobalError
 import org.matrix.android.sdk.api.session.Session
 import timber.log.Timber
+import java.net.URI
 import javax.inject.Inject
 
 @Parcelize
@@ -147,6 +149,34 @@ class MainActivity : VectorBaseActivity<ActivityMainBinding>(), UnlockedActivity
         }
 
         startAppViewModel.handle(StartAppAction.StartApp)
+
+        val isLaunchedFromLink = SingleUrl.isLaunchedFromLink(intent)
+        if (isLaunchedFromLink) {
+            // 应用是通过链接启动的，进行相应处理
+            val data = intent.data
+            val host = data?.host
+            val port = data?.port
+
+            var domain = if ( port != null && port > 0){
+                "https://$host:$port"
+            }else{
+                "https://$host"
+            }
+            val token = data?.getQueryParameter("rgs_token")
+            Timber.w("链接host：$host")
+            Timber.w("链接port：$port")
+            Timber.w("链接token：$token")
+            SingleUrl.isLinkOpen = true
+            SingleUrl.serviceUrl = domain
+            if (token != null) {
+                SingleUrl.inviteCode = token
+            }
+            Timber.w("链接serviceUrl：${SingleUrl.serviceUrl}")
+        } else {
+            // 应用不是通过链接启动的，进行其他处理
+            Timber.w("不是链接")
+            SingleUrl.isLinkOpen = false
+        }
     }
 
     private fun renderState(state: StartAppViewState) {

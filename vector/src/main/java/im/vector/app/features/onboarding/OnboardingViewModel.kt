@@ -260,7 +260,17 @@ class OnboardingViewModel @AssistedInject constructor(
 
     private fun handleSplashAction(action: OnboardingAction.SplashAction) {
         setState { copy(onboardingFlow = action.onboardingFlow) }
-        continueToPageAfterSplash(action.onboardingFlow)
+        when (action.onboardingFlow){
+            OnboardingFlow.SignUp -> {
+                if (vectorFeatures.isOnboardingUseCaseEnabled()){
+                    handleUpdateUseCase(OnboardingAction.UpdateUseCase(FtueUseCase.SKIP))
+                }else{
+                    continueToPageAfterSplash(action.onboardingFlow)
+                }
+            }
+            else -> continueToPageAfterSplash(action.onboardingFlow)
+        }
+
     }
 
     private fun continueToPageAfterSplash(onboardingFlow: OnboardingFlow) {

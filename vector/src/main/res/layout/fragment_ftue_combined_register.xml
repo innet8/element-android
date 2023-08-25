@@ -36,6 +36,15 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_chainStyle="packed"
             app:layout_constraintVertical_bias="0" />
+        <Button
+            android:id="@+id/showUserCodeScanButton"
+            style="@style/Widget.Vector.Button.Outlined"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/layout_vertical_margin"
+            android:text="@string/user_code_scan"
+            app:layout_constraintEnd_toEndOf="@id/createAccountGutterEnd"
+            app:layout_constraintBottom_toTopOf="@id/createAccountHeaderIcon"/>
 
         <ImageView
             android:id="@+id/createAccountHeaderIcon"
@@ -203,10 +212,52 @@
             android:layout_height="wrap_content"
             android:layout_marginTop="4dp"
             android:text="@string/ftue_auth_create_account_password_entry_footer"
-            app:layout_constraintBottom_toTopOf="@id/actionSpacing"
+            app:layout_constraintBottom_toTopOf="@id/inviteSpacing"
             app:layout_constraintEnd_toEndOf="@id/createAccountGutterEnd"
             app:layout_constraintStart_toStartOf="@id/createAccountGutterStart"
             app:layout_constraintTop_toBottomOf="@id/createAccountPasswordInput" />
+
+
+        <Space
+            android:id="@+id/inviteSpacing"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            app:layout_constraintBottom_toTopOf="@id/createAccountInviteInput"
+            app:layout_constraintHeight_percent="0.02"
+            app:layout_constraintTop_toBottomOf="@id/createAccountPasswordEntryFooter" />
+
+        <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/createAccountInviteInput"
+            style="@style/Widget.Vector.TextInputLayout.Username"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:hint="@string/invite_code"
+            app:layout_constraintBottom_toTopOf="@id/createAccountInviteEntryFooter"
+            app:layout_constraintEnd_toEndOf="@id/createAccountGutterEnd"
+            app:layout_constraintStart_toStartOf="@id/createAccountGutterStart"
+            app:layout_constraintTop_toBottomOf="@id/inviteSpacing">
+
+            <com.google.android.material.textfield.TextInputEditText
+                android:id="@+id/createAccountInvite"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:imeOptions="actionDone"
+                android:inputType="textNoSuggestions"
+                android:maxLines="1" />
+
+        </com.google.android.material.textfield.TextInputLayout>
+
+        <TextView
+            android:id="@+id/createAccountInviteEntryFooter"
+            style="@style/Widget.Vector.TextView.Micro"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="@string/invite_code"
+            app:layout_constraintBottom_toTopOf="@id/actionSpacing"
+            app:layout_constraintEnd_toEndOf="@id/createAccountGutterEnd"
+            app:layout_constraintStart_toStartOf="@id/createAccountGutterStart"
+            app:layout_constraintTop_toBottomOf="@id/createAccountInviteInput" />
 
         <Space
             android:id="@+id/actionSpacing"
@@ -214,7 +265,7 @@
             android:layout_height="0dp"
             app:layout_constraintBottom_toTopOf="@id/createAccountSubmit"
             app:layout_constraintHeight_percent="0.02"
-            app:layout_constraintTop_toBottomOf="@id/createAccountPasswordEntryFooter" />
+            app:layout_constraintTop_toBottomOf="@id/createAccountInviteEntryFooter" />
 
         <Button
             android:id="@+id/createAccountSubmit"
