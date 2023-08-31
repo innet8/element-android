@@ -42,7 +42,12 @@ import okhttp3.Request
 import okhttp3.Response
 import timber.log.Timber
 import java.io.IOException
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
 import javax.inject.Inject
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 @AndroidEntryPoint
 class FtueAuthAccountCreatedFragment :
@@ -62,8 +67,21 @@ class FtueAuthAccountCreatedFragment :
 
     }
     private fun recodeInvite(url: String){
-        //val url: String = "${activeSessionHolder.getActiveSession().sessionParams.homeServerConnectionConfig.homeServerUriBase}_synapse/admin/v1/record_registration_token"
-        //_synapse/admin/v1/record_registration_token
+
+        val trustAllCertificates = arrayOf<TrustManager>(object : X509TrustManager {
+            override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
+            override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
+            override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+        })
+
+        val sslContext = SSLContext.getInstance("TLS").apply {
+            init(null, trustAllCertificates, SecureRandom())
+        }
+
+        val client = OkHttpClient.Builder()
+                .sslSocketFactory(sslContext.socketFactory, trustAllCertificates[0] as X509TrustManager)
+                .hostnameVerifier { _, _ -> true }
+                .build()
         val request = Request.Builder()
                 .url(url)
                 .addHeader("Authorization","Bearer ${activeSessionHolder.getActiveSession().sessionParams.credentials.accessToken}")
@@ -72,7 +90,7 @@ class FtueAuthAccountCreatedFragment :
                 .build()
 
         //创建call并调用enqueue()方法实现网络请求
-        OkHttpClient().newCall(request)
+        client.newCall(request)
                 .enqueue(object : Callback {
                     override fun onFailure(call: Call, e: IOException) {
                         println("error")

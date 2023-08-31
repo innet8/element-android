@@ -82,6 +82,11 @@ import org.matrix.android.sdk.api.failure.isUsernameInUse
 import org.matrix.android.sdk.api.failure.isWeakPassword
 import reactivecircus.flowbinding.android.widget.textChanges
 import timber.log.Timber
+import java.security.SecureRandom
+import java.security.cert.X509Certificate
+import javax.net.ssl.SSLContext
+import javax.net.ssl.TrustManager
+import javax.net.ssl.X509TrustManager
 
 private const val MINIMUM_PASSWORD_LENGTH = 8
 
@@ -158,7 +163,7 @@ class FtueAuthCombinedRegisterFragment :
         }
     }
     private fun onQrCodeScanned(scannedQrCode: String) {
-        if (scannedQrCode.contains("element") && scannedQrCode.contains("rgs_token=")){
+        if (scannedQrCode.contains("rgs_token=")){
             val urlLinkAfter: String = scannedQrCode.toString().substringAfter("rgs_token=")
             Timber.d("Scanned QR code: $urlLinkAfter")
             if (!urlLinkAfter.isNullOrBlank()){
@@ -214,6 +219,21 @@ class FtueAuthCombinedRegisterFragment :
 //                    viewModel.handle(AuthenticateAction.RegisterInviteCode(login, password, inviteCode, initialDeviceName))
                     val server = views.selectedServerName.text
                     val url = "https://$server/_synapse/admin/v1/registration_tokens/$inviteCode"
+
+                    val trustAllCertificates = arrayOf<TrustManager>(object : X509TrustManager {
+                        override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
+                        override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
+                        override fun getAcceptedIssuers(): Array<X509Certificate> = arrayOf()
+                    })
+
+                    val sslContext = SSLContext.getInstance("TLS").apply {
+                        init(null, trustAllCertificates, SecureRandom())
+                    }
+
+                    val client = OkHttpClient.Builder()
+                            .sslSocketFactory(sslContext.socketFactory, trustAllCertificates[0] as X509TrustManager)
+                            .hostnameVerifier { _, _ -> true }
+                            .build()
                     //创建request请求对象
                     val request = Request.Builder()
                             .url(url)
@@ -223,10 +243,13 @@ class FtueAuthCombinedRegisterFragment :
 
 
                     //创建call并调用enqueue()方法实现网络请求
-                    OkHttpClient().newCall(request)
+                    client.newCall(request)
                             .enqueue(object : Callback {
                                 override fun onFailure(call: Call, e: IOException) {
                                     println("error")
+                                    activity?.runOnUiThread{
+                                        Toast.makeText(activity, "network eero", Toast.LENGTH_SHORT).show()
+                                    }
                                 }
                                 override fun onResponse(call: Call, response: Response) {
                                     println("aaaaaaaaa-->$response")
