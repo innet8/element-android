@@ -7,7 +7,7 @@
 <!--    http://synapse.huofu.vip:8009-->
 <!--    https://matrix.org-->
 <!--    https://t.5ok.co-->
-    <string name="matrix_org_server_url" translatable="false">https://synapse.huofu.vip:8009</string>
+    <string name="matrix_org_server_url" translatable="false">https://element.gezi.vip</string>
 
     <!-- Rageshake configuration -->
     <string name="bug_report_url" translatable="false">https://riot.im/bugreports/submit</string>
