@@ -60,6 +60,7 @@
             app:layout_constraintTop_toBottomOf="@id/loginHeaderTitle" />
 
         <TextView
+            android:visibility="gone"
             android:id="@+id/chooseYourServerHeader"
             style="@style/Widget.Vector.TextView.Caption"
             android:layout_width="0dp"
@@ -74,6 +75,7 @@
             app:layout_constraintTop_toBottomOf="@id/titleContentSpacing" />
 
         <TextView
+            android:visibility="gone"
             android:id="@+id/selectedServerName"
             style="@style/Widget.Vector.TextView.Subtitle"
             android:layout_width="0dp"
@@ -86,6 +88,7 @@
             app:layout_constraintTop_toBottomOf="@id/chooseYourServerHeader" />
 
         <TextView
+            android:visibility="gone"
             android:id="@+id/selectedServerDescription"
             style="@style/Widget.Vector.TextView.Micro"
             android:layout_width="0dp"
@@ -98,6 +101,7 @@
             app:layout_constraintTop_toBottomOf="@id/selectedServerName" />
 
         <Button
+            android:visibility="gone"
             android:id="@+id/editServerButton"
             style="@style/Widget.Vector.Button.Outlined"
             android:layout_width="wrap_content"
@@ -112,6 +116,7 @@
             app:layout_constraintTop_toTopOf="@id/chooseYourServerHeader" />
 
         <Space
+            android:visibility="gone"
             android:id="@+id/serverSelectionSpacing"
             android:layout_width="match_parent"
             android:layout_height="0dp"
@@ -120,6 +125,7 @@
             app:layout_constraintTop_toBottomOf="@id/selectedServerDescription" />
 
         <View
+            android:visibility="gone"
             android:layout_width="0dp"
             android:layout_height="1dp"
             android:background="?vctr_content_quaternary"
