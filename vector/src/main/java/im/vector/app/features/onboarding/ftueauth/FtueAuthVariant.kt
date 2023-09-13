@@ -16,11 +16,14 @@
 
 package im.vector.app.features.onboarding.ftueauth
 
+import android.content.Context
 import android.content.Intent
 import android.os.Parcelable
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.core.view.ViewCompat
 import androidx.core.view.children
 import androidx.core.view.isVisible
@@ -44,6 +47,8 @@ import im.vector.app.features.login.LoginMode
 import im.vector.app.features.login.ServerType
 import im.vector.app.features.login.SignMode
 import im.vector.app.features.login.TextInputFormFragmentMode
+import im.vector.app.features.onboarding.AESCryptUtils
+import im.vector.app.features.onboarding.MyFileUtils
 import im.vector.app.features.onboarding.OnboardingAction
 import im.vector.app.features.onboarding.OnboardingActivity
 import im.vector.app.features.onboarding.OnboardingFlow
@@ -51,13 +56,16 @@ import im.vector.app.features.onboarding.OnboardingVariant
 import im.vector.app.features.onboarding.OnboardingViewEvents
 import im.vector.app.features.onboarding.OnboardingViewModel
 import im.vector.app.features.onboarding.OnboardingViewState
+import im.vector.app.features.onboarding.SpHelperUtils
 import im.vector.app.features.onboarding.ftueauth.terms.FtueAuthLegacyStyleTermsFragment
 import im.vector.app.features.onboarding.ftueauth.terms.FtueAuthTermsFragment
 import im.vector.app.features.onboarding.ftueauth.terms.FtueAuthTermsLegacyStyleFragmentArgument
 import im.vector.lib.core.utils.compat.getParcelableExtraCompat
+import org.json.JSONObject
 import org.matrix.android.sdk.api.auth.registration.Stage
 import org.matrix.android.sdk.api.auth.toLocalizedLoginTerms
 import org.matrix.android.sdk.api.extensions.tryOrNull
+import java.io.File
 
 private const val FRAGMENT_REGISTRATION_STAGE_TAG = "FRAGMENT_REGISTRATION_STAGE_TAG"
 private const val FRAGMENT_LOGIN_TAG = "FRAGMENT_LOGIN_TAG"
@@ -480,8 +488,51 @@ class FtueAuthVariant(
 
     private fun onAccountSignedIn() {
         navigateToHome()
+//        showSaveAlert(activity)
     }
 
+    private fun showSaveAlert(context: Context){
+        var builder = AlertDialog.Builder(context)
+        builder.setTitle("提示")
+        builder.setMessage("是否存储服务器和账号信息")
+        val editText = EditText(context)
+        editText.hint = "请设置解密口令"
+        builder.setView(editText)
+        builder.setCancelable(false)
+        builder.setPositiveButton("确认",null)
+        builder.setNegativeButton("取消",null)
+        var dialogs: AlertDialog = builder.create()
+        if (!dialogs.isShowing){
+            dialogs.show()
+        }
+        dialogs.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
+            var input = editText.text.toString()
+            if (input.isNotEmpty()){
+                if (input.length<16){
+                    Toast.makeText(context,"最低长度为16",Toast.LENGTH_LONG).show()
+                }else{
+                    val serverUrl = SpHelperUtils.get(context,"serverUrl","")
+                    val account = SpHelperUtils.get(context,"account","")
+                    val obj = JSONObject()
+                    obj.put("serverUrl",serverUrl)
+                    obj.put("account",account)
+                    var content = AESCryptUtils.encrypt(obj.toString(),input)
+                    var filePath = File(MyFileUtils.getFileDir(context)+"/"+MyFileUtils.fileName)
+                    MyFileUtils.writeText(filePath,content)
+
+                    navigateToHome()
+
+                    dialogs.cancel()
+                }
+            }else{
+                Toast.makeText(context,"请设置解密口令",Toast.LENGTH_LONG).show()
+            }
+        })
+        dialogs.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+            navigateToHome()
+            dialogs.cancel()
+        }
+    }
     private fun onAccountCreated() {
         activity.supportFragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
         activity.replaceFragment(

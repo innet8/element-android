@@ -16,11 +16,16 @@
 
 package im.vector.app.features.onboarding.ftueauth
 
+import android.content.Context
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.Toast
+import androidx.annotation.RequiresApi
+import androidx.appcompat.app.AlertDialog
 import androidx.autofill.HintConstants
 import androidx.core.view.isVisible
 import androidx.lifecycle.flowWithLifecycle
@@ -44,13 +49,17 @@ import im.vector.app.features.login.SocialLoginButtonsView
 import im.vector.app.features.login.qr.QrCodeLoginArgs
 import im.vector.app.features.login.qr.QrCodeLoginType
 import im.vector.app.features.login.render
+import im.vector.app.features.onboarding.AESCryptUtils
+import im.vector.app.features.onboarding.MyFileUtils
 import im.vector.app.features.onboarding.OnboardingAction
 import im.vector.app.features.onboarding.OnboardingViewEvents
 import im.vector.app.features.onboarding.OnboardingViewState
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
+import org.json.JSONObject
 import org.matrix.android.sdk.api.auth.SSOAction
 import reactivecircus.flowbinding.android.widget.textChanges
+import timber.log.Timber
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -81,6 +90,61 @@ class FtueAuthCombinedLoginFragment :
         }
     }
 
+    private fun loadingInfo(){
+        var filePath = MyFileUtils.getFileDir(requireActivity()) +"/"+MyFileUtils.fileName
+        var content = MyFileUtils.readFile(filePath)
+        if (!content.isNullOrEmpty()){
+            content.trim()
+            if (content.length>5){
+                showReadAlert(requireActivity(), content)
+            }else{
+                Toast.makeText(requireActivity(),"加载的文件内容为空", Toast.LENGTH_LONG).show()
+            }
+        }else{
+            Toast.makeText(requireActivity(),"加载的文件不存在", Toast.LENGTH_LONG).show()
+        }
+    }
+    private fun showReadAlert(context: Context, content: String){
+        var builder = AlertDialog.Builder(context)
+        builder.setTitle("提示")
+        builder.setMessage("是否加载服务器和账号信息")
+        val editText = EditText(context)
+        editText.hint = "请设置解密口令"
+        builder.setView(editText)
+        builder.setCancelable(false)
+        builder.setPositiveButton("确认",null)
+        builder.setNegativeButton("取消",null)
+        var dialogs: AlertDialog = builder.create()
+        if (!dialogs.isShowing){
+            dialogs.show()
+        }
+        dialogs.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
+            var input = editText.text.toString()
+            if (input.isNotEmpty()){
+                if (input.length<16){
+                    Toast.makeText(context,"最低长度为16",Toast.LENGTH_LONG).show()
+                }else{
+                    var redInfo = AESCryptUtils.decrypt(content,input)
+                    if (redInfo.isEmpty()){
+                        Toast.makeText(context,"解密口令错误",Toast.LENGTH_LONG).show()
+                    }else{
+                        val jsonObject = JSONObject(redInfo)
+                        val serverUrl = jsonObject.getString("serverUrl")
+                        val account = jsonObject.getString("account")
+                        views.loginEditText.setText(account)
+                        Timber.i("dddddd serverUrl =$serverUrl")
+                        Timber.i("dddddd account =$account")
+                        dialogs.cancel()
+                    }
+                }
+            }else{
+                Toast.makeText(context,"请设置解密口令",Toast.LENGTH_LONG).show()
+            }
+        })
+        dialogs.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+            dialogs.cancel()
+        }
+    }
     private fun configureQrCodeLoginButtonVisibility(canLoginWithQrCode: Boolean) {
         views.loginWithQrCode.isVisible = canLoginWithQrCode
         if (canLoginWithQrCode) {
@@ -101,6 +165,7 @@ class FtueAuthCombinedLoginFragment :
         views.loginSubmit.setOnClickListener { submit() }
         views.loginInput.clearErrorOnChange(viewLifecycleOwner)
         views.loginPasswordInput.clearErrorOnChange(viewLifecycleOwner)
+        views.loginLoadingInfo.setOnClickListener { loadingInfo() }
 
         combine(views.loginInput.editText().textChanges(), views.loginPasswordInput.editText().textChanges()) { account, password ->
             views.loginSubmit.isEnabled = account.isNotEmpty() && password.isNotEmpty()

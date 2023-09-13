@@ -191,7 +191,19 @@
                 android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>
-
+        <Button
+            android:visibility="gone"
+            android:id="@+id/loginLoadingInfo"
+            style="@style/Widget.Vector.Button.Text.Login"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Loading Info"
+            android:textAllCaps="true"
+            android:textColor="?colorSecondary"
+            app:layout_constraintBottom_toTopOf="@id/actionSpacing"
+            app:layout_constraintHorizontal_bias="1"
+            app:layout_constraintStart_toStartOf="@id/loginGutterStart"
+            app:layout_constraintTop_toBottomOf="@id/loginPasswordInput" />
         <Button
             android:id="@+id/loginForgotPassword"
             style="@style/Widget.Vector.Button.Text.Login"
