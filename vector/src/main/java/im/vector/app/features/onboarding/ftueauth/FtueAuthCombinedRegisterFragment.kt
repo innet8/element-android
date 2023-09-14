@@ -17,6 +17,7 @@
 package im.vector.app.features.onboarding.ftueauth
 
 import android.app.Activity
+import android.graphics.Paint
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -47,6 +48,8 @@ import im.vector.app.core.extensions.setOnImeDoneListener
 import im.vector.app.core.extensions.toReducedUrl
 import im.vector.app.core.utils.ensureProtocol
 import im.vector.app.core.utils.ensureTrailingSlash
+import im.vector.app.core.utils.openUrlInChromeCustomTab
+import im.vector.app.core.utils.openUrlInExternalBrowser
 import im.vector.app.databinding.FragmentFtueCombinedRegisterBinding
 import im.vector.app.features.login.LoginMode
 import im.vector.app.features.login.SSORedirectRouterActivity
@@ -59,6 +62,7 @@ import im.vector.app.features.onboarding.OnboardingViewEvents
 import im.vector.app.features.onboarding.OnboardingViewState
 import im.vector.app.features.onboarding.SingleUrl
 import im.vector.app.features.qrcode.QrCodeScannerActivity
+import im.vector.app.features.settings.VectorLocale
 import im.vector.app.features.usercode.UserCodeShareViewEvents
 import im.vector.app.features.usercode.UserCodeSharedViewModel
 import kotlinx.coroutines.flow.combine
@@ -84,6 +88,7 @@ import reactivecircus.flowbinding.android.widget.textChanges
 import timber.log.Timber
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
+import javax.inject.Inject
 import javax.net.ssl.SSLContext
 import javax.net.ssl.TrustManager
 import javax.net.ssl.X509TrustManager
@@ -93,7 +98,7 @@ private const val MINIMUM_PASSWORD_LENGTH = 8
 @AndroidEntryPoint
 class FtueAuthCombinedRegisterFragment :
         AbstractSSOFtueAuthFragment<FragmentFtueCombinedRegisterBinding>() {
-
+    @Inject lateinit var languageVectorLocale: VectorLocale
     override fun getBinding(inflater: LayoutInflater, container: ViewGroup?): FragmentFtueCombinedRegisterBinding {
         return FragmentFtueCombinedRegisterBinding.inflate(inflater, container, false)
     }
@@ -120,6 +125,10 @@ class FtueAuthCombinedRegisterFragment :
 
         if (!SingleUrl.serviceUrl.isNullOrEmpty()){
             updateAddress(SingleUrl.serviceUrl)
+        }
+        views.loginLanguageSelect.text = languageVectorLocale.localeToLocalisedString(languageVectorLocale.applicationLocale)
+        views.loginLanguage.debouncedClicks{
+            viewModel.handle(OnboardingAction.PostViewEvent(OnboardingViewEvents.OnLanguageClicked))
         }
     }
 
@@ -148,6 +157,9 @@ class FtueAuthCombinedRegisterFragment :
         views.showUserCodeScanButton.debouncedClicks {
             QrCodeScannerActivity.startForResult(requireActivity(), scanActivityResultLauncher)
         }
+        views.officialWebsite.paint.flags = Paint.UNDERLINE_TEXT_FLAG
+        views.officialWebsite.paint.isAntiAlias = true
+        views.officialWebsite.debouncedClicks { openUrlInExternalBrowser(requireActivity(), getString(R.string.official_website_url)) }
     }
     private val scanActivityResultLauncher = registerStartForActivityResult { activityResult ->
         if (activityResult.resultCode == Activity.RESULT_OK) {

@@ -17,6 +17,7 @@
 package im.vector.app.features.onboarding.ftueauth
 
 import android.content.Context
+import android.graphics.Paint
 import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -41,6 +42,8 @@ import im.vector.app.core.extensions.realignPercentagesToParent
 import im.vector.app.core.extensions.setOnFocusLostListener
 import im.vector.app.core.extensions.setOnImeDoneListener
 import im.vector.app.core.extensions.toReducedUrl
+import im.vector.app.core.utils.openUrlInChromeCustomTab
+import im.vector.app.core.utils.openUrlInExternalBrowser
 import im.vector.app.databinding.FragmentFtueCombinedLoginBinding
 import im.vector.app.features.VectorFeatures
 import im.vector.app.features.login.LoginMode
@@ -54,6 +57,7 @@ import im.vector.app.features.onboarding.MyFileUtils
 import im.vector.app.features.onboarding.OnboardingAction
 import im.vector.app.features.onboarding.OnboardingViewEvents
 import im.vector.app.features.onboarding.OnboardingViewState
+import im.vector.app.features.settings.VectorLocale
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import org.json.JSONObject
@@ -69,6 +73,7 @@ class FtueAuthCombinedLoginFragment :
     @Inject lateinit var loginFieldsValidation: LoginFieldsValidation
     @Inject lateinit var loginErrorParser: LoginErrorParser
     @Inject lateinit var vectorFeatures: VectorFeatures
+    @Inject lateinit var languageVectorLocale: VectorLocale
 
     override fun getBinding(inflater: LayoutInflater, container: ViewGroup?): FragmentFtueCombinedLoginBinding {
         return FragmentFtueCombinedLoginBinding.inflate(inflater, container, false)
@@ -87,6 +92,10 @@ class FtueAuthCombinedLoginFragment :
 
         viewModel.onEach(OnboardingViewState::canLoginWithQrCode) {
             configureQrCodeLoginButtonVisibility(it)
+        }
+        views.loginLanguageSelect.text = languageVectorLocale.localeToLocalisedString(languageVectorLocale.applicationLocale)
+        views.loginLanguage.debouncedClicks{
+            viewModel.handle(OnboardingAction.PostViewEvent(OnboardingViewEvents.OnLanguageClicked))
         }
     }
 
@@ -170,6 +179,9 @@ class FtueAuthCombinedLoginFragment :
         combine(views.loginInput.editText().textChanges(), views.loginPasswordInput.editText().textChanges()) { account, password ->
             views.loginSubmit.isEnabled = account.isNotEmpty() && password.isNotEmpty()
         }.flowWithLifecycle(lifecycle).launchIn(viewLifecycleOwner.lifecycleScope)
+        views.officialWebsite.paint.flags = Paint.UNDERLINE_TEXT_FLAG
+        views.officialWebsite.paint.isAntiAlias = true
+        views.officialWebsite.debouncedClicks { openUrlInExternalBrowser(requireActivity(), getString(R.string.official_website_url)) }
     }
 
     private fun submit() {

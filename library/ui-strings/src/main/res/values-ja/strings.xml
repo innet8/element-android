@@ -2869,4 +2869,5 @@
     <string name="error_voice_broadcast_unable_to_decrypt">この音声配信を復号化できません。</string>
     <string name="settings_external_account_management_title">アカウント</string>
     <string name="invite_code">待コード</string>
+    <string name="official_website">公式ウェブサイト</string>
 </resources>

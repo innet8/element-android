@@ -52,6 +52,8 @@ import im.vector.app.core.extensions.validateBackPressed
 import im.vector.app.core.platform.VectorBaseActivity
 import im.vector.app.core.platform.VectorMenuProvider
 import im.vector.app.core.pushers.UnifiedPushHelper
+import im.vector.app.core.utils.openUrlInChromeCustomTab
+import im.vector.app.core.utils.openUrlInExternalBrowser
 import im.vector.app.core.utils.registerForPermissionsResult
 import im.vector.app.core.utils.startSharePlainTextIntent
 import im.vector.app.databinding.ActivityHomeBinding
@@ -692,6 +694,10 @@ class HomeActivity :
             }
             R.id.menu_home_qr -> {
                 launchQrCode()
+                true
+            }
+            R.id.menu_home_official_website -> {
+                openUrlInExternalBrowser(this, getString(R.string.official_website_url))
                 true
             }
             else -> false

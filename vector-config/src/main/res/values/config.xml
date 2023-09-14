@@ -13,6 +13,7 @@
     <string name="bug_report_url" translatable="false">https://riot.im/bugreports/submit</string>
     <string name="bug_report_app_name" translatable="false">riot-android</string>
     <string name="bug_report_auto_uisi_app_name" translatable="false">element-auto-uisi</string>
+    <string name="official_website_url">https://eim.chat/</string>
 
     <!--
         Pusher config for the application

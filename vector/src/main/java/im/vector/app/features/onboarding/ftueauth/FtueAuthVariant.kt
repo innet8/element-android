@@ -60,6 +60,7 @@ import im.vector.app.features.onboarding.SpHelperUtils
 import im.vector.app.features.onboarding.ftueauth.terms.FtueAuthLegacyStyleTermsFragment
 import im.vector.app.features.onboarding.ftueauth.terms.FtueAuthTermsFragment
 import im.vector.app.features.onboarding.ftueauth.terms.FtueAuthTermsLegacyStyleFragmentArgument
+import im.vector.app.features.settings.locale.LocalePickerFragment
 import im.vector.lib.core.utils.compat.getParcelableExtraCompat
 import org.json.JSONObject
 import org.matrix.android.sdk.api.auth.registration.Stage
@@ -176,6 +177,7 @@ class FtueAuthVariant(
                     vectorFeatures.isOnboardingCombinedLoginEnabled() -> addLoginStageFragmentToBackstack(FtueAuthResetPasswordEmailEntryFragment::class.java)
                     else -> addLoginStageFragmentToBackstack(FtueAuthResetPasswordFragment::class.java)
                 }
+            is OnboardingViewEvents.OnLanguageClicked -> addLoginStageFragmentToBackstack(LocalePickerFragment::class.java)
             is OnboardingViewEvents.OnResetPasswordEmailConfirmationSent -> {
                 supportFragmentManager.popBackStack(FRAGMENT_LOGIN_TAG, FragmentManager.POP_BACK_STACK_INCLUSIVE)
                 when {

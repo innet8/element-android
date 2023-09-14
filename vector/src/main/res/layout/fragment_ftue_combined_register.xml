@@ -13,7 +13,36 @@
         android:id="@+id/createAccountRoot"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
-
+        <LinearLayout
+            android:id="@+id/loginLanguage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:gravity="center|right"
+            app:layout_constraintStart_toStartOf="@id/createAccountGutterStart"
+            tools:ignore="MissingConstraints">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_interface_language"
+                android:layout_marginRight="6dp"></TextView>
+            <TextView
+                android:id="@+id/loginLanguageSelect"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10dp"
+                android:textColor="@color/palette_gray_250"></TextView>
+        </LinearLayout>
+        <ImageView
+            android:id="@+id/showUserCodeScanButton"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:src="@drawable/ic_register_scan"
+            android:layout_marginBottom="14dp"
+            app:layout_constraintEnd_toEndOf="@id/createAccountGutterEnd"
+            app:layout_constraintBottom_toTopOf="@id/createAccountHeaderIcon"/>
         <androidx.constraintlayout.widget.Guideline
             android:id="@+id/createAccountGutterStart"
             android:layout_width="wrap_content"
@@ -36,15 +65,6 @@
             app:layout_constraintTop_toTopOf="parent"
             app:layout_constraintVertical_chainStyle="packed"
             app:layout_constraintVertical_bias="0" />
-        <Button
-            android:id="@+id/showUserCodeScanButton"
-            style="@style/Widget.Vector.Button.Outlined"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="@dimen/layout_vertical_margin"
-            android:text="@string/user_code_scan"
-            app:layout_constraintEnd_toEndOf="@id/createAccountGutterEnd"
-            app:layout_constraintBottom_toTopOf="@id/createAccountHeaderIcon"/>
 
         <ImageView
             android:id="@+id/createAccountHeaderIcon"
@@ -318,6 +338,17 @@
             app:layout_constraintStart_toStartOf="@id/createAccountGutterStart"
             app:layout_constraintTop_toBottomOf="@id/ssoButtonsHeader"
             tools:signMode="signup" />
+        <TextView
+            android:id="@+id/official_website"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
+            android:text="@string/official_website"
+            android:textColor="?colorSecondary"
+            app:layout_constraintEnd_toEndOf="@id/createAccountGutterEnd"
+            app:layout_constraintStart_toStartOf="@id/createAccountGutterStart"
+            app:layout_constraintTop_toBottomOf="@id/ssoButtons"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

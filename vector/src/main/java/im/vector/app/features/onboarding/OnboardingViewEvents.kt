@@ -48,6 +48,7 @@ sealed class OnboardingViewEvents : VectorViewEvents {
     object OnHomeserverEdited : OnboardingViewEvents()
     data class OnSignModeSelected(val signMode: SignMode) : OnboardingViewEvents()
     object OnForgetPasswordClicked : OnboardingViewEvents()
+    object OnLanguageClicked : OnboardingViewEvents()
 
     data class OnResetPasswordEmailConfirmationSent(val email: String) : OnboardingViewEvents()
     object OpenResetPasswordComplete : OnboardingViewEvents()

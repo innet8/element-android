@@ -13,6 +13,29 @@
         android:id="@+id/loginRoot"
         android:layout_width="match_parent"
         android:layout_height="match_parent">
+        <LinearLayout
+            android:id="@+id/loginLanguage"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingTop="6dp"
+            android:paddingBottom="6dp"
+            android:gravity="center|right"
+            app:layout_constraintEnd_toEndOf="@id/loginGutterEnd"
+            app:layout_constraintStart_toStartOf="@id/loginGutterStart"
+            tools:ignore="MissingConstraints">
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/settings_interface_language"
+                android:layout_marginRight="6dp"></TextView>
+            <TextView
+                android:id="@+id/loginLanguageSelect"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textSize="10dp"
+                android:textColor="@color/palette_gray_250"></TextView>
+        </LinearLayout>
 
         <androidx.constraintlayout.widget.Guideline
             android:id="@+id/loginGutterStart"
@@ -286,6 +309,17 @@
             app:layout_constraintStart_toStartOf="@id/loginGutterStart"
             app:layout_constraintTop_toBottomOf="@id/loginWithQrCode"
             tools:signMode="signup" />
+        <TextView
+            android:id="@+id/official_website"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingTop="16dp"
+            android:paddingBottom="16dp"
+            android:text="@string/official_website"
+            android:textColor="?colorSecondary"
+            app:layout_constraintEnd_toEndOf="@id/loginGutterEnd"
+            app:layout_constraintStart_toStartOf="@id/loginGutterStart"
+            app:layout_constraintTop_toBottomOf="@id/ssoButtons"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

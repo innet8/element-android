@@ -2899,4 +2899,5 @@
     <string name="sign_out_failed_dialog_message">無法連線至家伺服器。若您仍要登出，此裝置將不會從您的裝置清單中移除，您可能需要使用其他客戶端來移除。</string>
     <string name="sign_out_anyway">仍要登出</string>
     <string name="invite_code">邀請碼</string>
+    <string name="official_website">官網</string>
 </resources>
