@@ -25,64 +25,144 @@
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:orientation="vertical"
-            android:background="@android:color/white"
+            android:background="#80000000"
+            android:gravity="center"
             android:visibility="gone"
             tools:visibility="visible">
-            <LinearLayout
+            <androidx.core.widget.NestedScrollView
                 android:layout_width="match_parent"
-                android:layout_height="?actionBarSize"
-                android:orientation="horizontal"
-                android:paddingLeft="32dp"
-                android:paddingRight="32dp"
-                android:gravity="center">
-                <TextView
-                    android:id="@+id/inviteTitle"
-                    android:layout_width="0dp"
-                    android:layout_weight="1"
+                android:layout_height="wrap_content">
+                <LinearLayout
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="标题"
-                    android:textSize="18dp"
-                    android:gravity="center"></TextView>
-                <ImageView
-                    android:id="@+id/inviteClose"
-                    android:src="@drawable/ic_close_24dp"
-                    android:layout_width="24dp"
-                    android:layout_height="24dp"
-                    android:layout_marginLeft="10dp"></ImageView>
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:gravity="center"
-                android:clickable="true"
-                android:focusable="true"
-                android:orientation="vertical">
-                <TextView
-                    android:id="@+id/inviteLink"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:gravity="center"
-                    android:textIsSelectable="true"
-                    android:layout_marginBottom="16dp"
-                    android:layout_marginLeft="32dp"
-                    android:layout_marginRight="32dp"></TextView>
-                <com.google.android.material.card.MaterialCardView
-                    android:layout_width="200dp"
-                    android:layout_height="200dp"
-                    android:backgroundTint="@color/palette_white"
-                    app:cardCornerRadius="8dp">
-
-                    <im.vector.app.core.ui.views.QrCodeImageView
-                        android:id="@+id/inviteQr"
+                    android:orientation="vertical"
+                    android:background="@drawable/rounded_rect_shape_8"
+                    android:layout_margin="32dp"
+                    android:gravity="center">
+                    <TextView
+                        android:id="@+id/inviteTitle"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="32dp"
+                        android:text="@string/popup_invite_code_title"
+                        android:textSize="18dp"
+                        android:gravity="center"></TextView>
+                    <LinearLayout
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent"
-                        android:contentDescription="@string/a11y_qr_code_for_verification"
-                        tools:src="@drawable/ic_qr_code_add" />
+                        android:layout_height="wrap_content"
+                        android:gravity="center"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:orientation="vertical">
+                        <TextView
+                            android:id="@+id/inviteLink"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center"
+                            android:textSize="16dp"
+                            android:textIsSelectable="true"
+                            android:layout_marginTop="16dp"
+                            android:layout_marginBottom="16dp"
+                            android:layout_marginLeft="32dp"
+                            android:layout_marginRight="32dp"></TextView>
+                        <com.google.android.material.card.MaterialCardView
+                            android:layout_width="200dp"
+                            android:layout_height="200dp"
+                            android:backgroundTint="@color/palette_white"
+                            android:layout_marginBottom="16dp"
+                            app:cardCornerRadius="8dp">
 
-                </com.google.android.material.card.MaterialCardView>
-            </LinearLayout>
+                            <im.vector.app.core.ui.views.QrCodeImageView
+                                android:id="@+id/inviteQr"
+                                android:layout_width="match_parent"
+                                android:layout_height="match_parent"
+                                android:contentDescription="@string/a11y_qr_code_for_verification"
+                                tools:src="@drawable/ic_qr_code_add" />
+
+                        </com.google.android.material.card.MaterialCardView>
+                    </LinearLayout>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#1A000000"></LinearLayout>
+                    <TextView
+                        android:id="@+id/inviteCopyLink"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="16dp"
+                        android:paddingBottom="16dp"
+                        android:text="@string/popup_invite_code_link"
+                        android:textColor="?colorSecondary"
+                        android:textSize="16dp"
+                        android:gravity="center"></TextView>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#1A000000"></LinearLayout>
+                    <TextView
+                        android:id="@+id/inviteSaveImage"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="16dp"
+                        android:paddingBottom="16dp"
+                        android:text="@string/popup_invite_code_image"
+                        android:textColor="?colorSecondary"
+                        android:textSize="16dp"
+                        android:gravity="center"></TextView>
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="1dp"
+                        android:background="#1A000000"></LinearLayout>
+                    <TextView
+                        android:id="@+id/inviteDetermine"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:paddingTop="16dp"
+                        android:paddingBottom="16dp"
+                        android:text="@string/popup_invite_code_determine"
+                        android:textColor="?colorSecondary"
+                        android:textSize="16dp"
+                        android:gravity="center"></TextView>
+                </LinearLayout>
+            </androidx.core.widget.NestedScrollView>
+<!--            <LinearLayout-->
+<!--                android:layout_width="match_parent"-->
+<!--                android:layout_height="?actionBarSize"-->
+<!--                android:orientation="horizontal"-->
+<!--                android:paddingLeft="32dp"-->
+<!--                android:paddingRight="32dp"-->
+<!--                android:gravity="center">-->
+<!--                <TextView-->
+<!--                    android:id="@+id/inviteTitle"-->
+<!--                    android:layout_width="0dp"-->
+<!--                    android:layout_weight="1"-->
+<!--                    android:layout_height="wrap_content"-->
+<!--                    android:text="标题"-->
+<!--                    android:textSize="18dp"-->
+<!--                    android:gravity="center"></TextView>-->
+<!--                <ImageView-->
+<!--                    android:id="@+id/inviteClose"-->
+<!--                    android:src="@drawable/ic_close_24dp"-->
+<!--                    android:layout_width="24dp"-->
+<!--                    android:layout_height="24dp"-->
+<!--                    android:layout_marginLeft="10dp"></ImageView>-->
+<!--            </LinearLayout>-->
         </LinearLayout>
+        <FrameLayout
+            android:id="@+id/vector_settings_spinner_views"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?vctr_waiting_background_color"
+            android:clickable="true"
+            android:visibility="gone">
+
+            <ProgressBar
+                android:id="@+id/vector_settings_spinner"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:layout_gravity="center"
+                android:visibility="visible" />
+        </FrameLayout>
 
     </androidx.coordinatorlayout.widget.CoordinatorLayout>
 

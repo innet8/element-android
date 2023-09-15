@@ -21,12 +21,11 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import android.graphics.Canvas
-import android.graphics.drawable.BitmapDrawable
+import android.media.MediaScannerConnection
 import android.net.Uri
 import android.os.Bundle
 import android.os.Environment
 import android.os.Parcelable
-import android.provider.MediaStore
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
@@ -52,10 +51,11 @@ import im.vector.app.core.extensions.validateBackPressed
 import im.vector.app.core.platform.VectorBaseActivity
 import im.vector.app.core.platform.VectorMenuProvider
 import im.vector.app.core.pushers.UnifiedPushHelper
-import im.vector.app.core.utils.openUrlInChromeCustomTab
+import im.vector.app.core.utils.copyToClipboard
 import im.vector.app.core.utils.openUrlInExternalBrowser
 import im.vector.app.core.utils.registerForPermissionsResult
 import im.vector.app.core.utils.startSharePlainTextIntent
+import im.vector.app.core.utils.toast
 import im.vector.app.databinding.ActivityHomeBinding
 import im.vector.app.features.MainActivity
 import im.vector.app.features.MainActivityArgs
@@ -72,7 +72,6 @@ import im.vector.app.features.matrixto.OriginOfMatrixTo
 import im.vector.app.features.navigation.Navigator
 import im.vector.app.features.notifications.NotificationDrawerManager
 import im.vector.app.features.onboarding.AuthenticationDescription
-import im.vector.app.features.onboarding.SingleUrl
 import im.vector.app.features.permalink.NavigationInterceptor
 import im.vector.app.features.permalink.PermalinkHandler
 import im.vector.app.features.permalink.PermalinkHandler.Companion.MATRIX_TO_CUSTOM_SCHEME_URL_BASE
@@ -105,7 +104,6 @@ import okhttp3.Callback
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import org.checkerframework.org.apache.commons.lang3.SystemUtils
 import org.json.JSONObject
 import org.matrix.android.sdk.api.session.permalinks.PermalinkService
 import org.matrix.android.sdk.api.session.sync.InitialSyncStrategy
@@ -221,7 +219,7 @@ class HomeActivity :
             hideKeyboard()
         }
     }
-
+    private var mLoadingView: View? = null
     override fun getCoordinatorLayout() = views.coordinatorLayout
 
     override fun getBinding() = ActivityHomeBinding.inflate(layoutInflater)
@@ -299,6 +297,8 @@ class HomeActivity :
             handleIntent(intent)
         }
         homeActivityViewModel.handle(HomeActivityViewActions.ViewStarted)
+        // find the view from activity
+        mLoadingView = findViewById(R.id.vector_settings_spinner_views)
     }
 
     private fun askUserToSelectPushDistributor() {
@@ -684,7 +684,6 @@ class HomeActivity :
                 true
             }
             R.id.menu_home_invite_friends -> {
-                views.inviteTitle.text = getString(R.string.invite_friends)
                 var homeServerUriBase = activeSessionHolder.getActiveSession().sessionParams.homeServerConnectionConfig.homeServerUriBase
                 val url: String = "${homeServerUriBase}_synapse/admin/v1/registration_link"
                 Timber.w("url=$url")
@@ -706,8 +705,11 @@ class HomeActivity :
 
     private fun showInvitePopup(appInviteLink: String){
         runOnUiThread {
-            views.inviteClose.setOnClickListener(View.OnClickListener { hideInvitePopup() })
-            views.inviteQr.setOnClickListener(View.OnClickListener { saveInviteQrImage(views.inviteQr) })
+            views.inviteCopyLink.setOnClickListener(View.OnClickListener {
+                copyToClipboard(this,views.inviteLink.text)
+            })
+            views.inviteDetermine.setOnClickListener(View.OnClickListener { hideInvitePopup() })
+            views.inviteSaveImage.setOnClickListener(View.OnClickListener { saveInviteQrImage(views.inviteQr) })
             views.inviteContent.visibility = View.VISIBLE
             //http://localhost:8008/_matrix/static/?
             // open_url=
@@ -721,7 +723,7 @@ class HomeActivity :
     }
     private fun getInviteLink(url: String){
         Timber.i("token=${activeSessionHolder.getActiveSession().sessionParams.credentials.accessToken}")
-
+        mLoadingView?.visibility = View.VISIBLE
         val trustAllCertificates = arrayOf<TrustManager>(object : X509TrustManager {
             override fun checkClientTrusted(chain: Array<X509Certificate>, authType: String) {}
             override fun checkServerTrusted(chain: Array<X509Certificate>, authType: String) {}
@@ -749,10 +751,14 @@ class HomeActivity :
                     override fun onFailure(call: Call, e: IOException) {
                         println("error=$e")
                         runOnUiThread{
-                            Toast.makeText(applicationContext, "network eero", Toast.LENGTH_SHORT).show()
+                            hideLoadingView()
+                            this@HomeActivity.toast(getString(R.string.error_no_network))
                         }
                     }
                     override fun onResponse(call: Call, response: Response) {
+                        runOnUiThread {
+                            hideLoadingView()
+                        }
                         println("aaaaaaaaa-->$response")
                         val responseCode = response.code
                         println("responseCode-->$responseCode")
@@ -773,6 +779,12 @@ class HomeActivity :
                     }
                 })
     }
+    /**
+     * Hide the loading view.
+     */
+    private fun hideLoadingView() {
+        mLoadingView?.visibility = View.GONE
+    }
     private fun hideInvitePopup(){
         views.inviteContent.visibility = View.GONE
     }
@@ -788,10 +800,11 @@ class HomeActivity :
             bitmap?.compress(Bitmap.CompressFormat.JPEG, 100, outputStream)
             outputStream.flush()
             outputStream.close()
-            Toast.makeText(this, "Image saved to gallery", Toast.LENGTH_SHORT).show()
+            MediaScannerConnection.scanFile(this, arrayOf(imageFile.toString()),null, null)
+            this.toast(getString(R.string.popup_save_success))
         } catch (e: IOException) {
             e.printStackTrace()
-            Toast.makeText(this, "Failed to save image", Toast.LENGTH_SHORT).show()
+            this.toast(getString(R.string.popup_save_fail))
         }
 
     }

@@ -2868,6 +2868,13 @@
     <string name="room_poll_details_go_to_timeline">アンケートをタイムラインに表示</string>
     <string name="error_voice_broadcast_unable_to_decrypt">この音声配信を復号化できません。</string>
     <string name="settings_external_account_management_title">アカウント</string>
+
     <string name="invite_code">待コード</string>
     <string name="official_website">公式ウェブサイト</string>
+    <string name="popup_invite_code_title">待コード</string>
+    <string name="popup_invite_code_link">リンクをコピーする</string>
+    <string name="popup_invite_code_image">画像を保存する</string>
+    <string name="popup_invite_code_determine">決定する</string>
+    <string name="popup_save_success">アルバムに保存 成功</string>
+    <string name="popup_save_fail">アルバムに保存 失敗</string>
 </resources>

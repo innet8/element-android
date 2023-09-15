@@ -1734,7 +1734,14 @@
     <string name="action_view_threads">Konuları Görüntüle</string>
     <string name="initial_sync_request_title">Başlangıç eşitleme isteği</string>
     <string name="all_chats">Tüm Sohbetler</string>
+
     <string name="invite_code">Davet Kodu</string>
     <string name="official_website">Resmi Web Sitesi</string>
+    <string name="popup_invite_code_title">Davet Kodu</string>
+    <string name="popup_invite_code_link">Bağlantıyı Kopyala</string>
+    <string name="popup_invite_code_image">Görüntüyü Kaydet</string>
+    <string name="popup_invite_code_determine">Belirlemek</string>
+    <string name="popup_save_success">Albüme kaydet başarı</string>
+    <string name="popup_save_fail">Albüme kaydetme başarısız</string>
 
 </resources>

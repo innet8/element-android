@@ -3596,4 +3596,10 @@
 
     <string name="invite_code">Invite code</string>
     <string name="official_website">Official Website</string>
+    <string name="popup_invite_code_title">Invite Code</string>
+    <string name="popup_invite_code_link">Copy Link</string>
+    <string name="popup_invite_code_image">Save Image</string>
+    <string name="popup_invite_code_determine">Determine</string>
+    <string name="popup_save_success">Save to album success</string>
+    <string name="popup_save_fail">Save to album failed</string>
 </resources>
