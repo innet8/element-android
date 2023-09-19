@@ -4,10 +4,10 @@
     <!-- "app_name" is now defined in build.gradle -->
 
     <!-- server urls -->
-<!--    http://synapse.huofu.vip:8009-->
+<!--    http://element.gezi.vip-->
 <!--    https://matrix.org-->
 <!--    https://t.5ok.co-->
-    <string name="matrix_org_server_url" translatable="false">https://element.gezi.vip</string>
+    <string name="matrix_org_server_url" translatable="false">https://cc.eim.chat</string>
 
     <!-- Rageshake configuration -->
     <string name="bug_report_url" translatable="false">https://riot.im/bugreports/submit</string>
