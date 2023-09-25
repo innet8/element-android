@@ -16,16 +16,22 @@
 
 package im.vector.app.features.onboarding.ftueauth
 
+import android.app.Activity
 import android.content.Context
+import android.content.Intent
 import android.graphics.Paint
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Environment
+import android.provider.DocumentsContract
+import android.provider.Settings
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
-import androidx.annotation.RequiresApi
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.autofill.HintConstants
 import androidx.core.view.isVisible
@@ -42,8 +48,8 @@ import im.vector.app.core.extensions.realignPercentagesToParent
 import im.vector.app.core.extensions.setOnFocusLostListener
 import im.vector.app.core.extensions.setOnImeDoneListener
 import im.vector.app.core.extensions.toReducedUrl
-import im.vector.app.core.utils.openUrlInChromeCustomTab
 import im.vector.app.core.utils.openUrlInExternalBrowser
+import im.vector.app.core.utils.toast
 import im.vector.app.databinding.FragmentFtueCombinedLoginBinding
 import im.vector.app.features.VectorFeatures
 import im.vector.app.features.login.LoginMode
@@ -100,20 +106,97 @@ class FtueAuthCombinedLoginFragment :
     }
 
     private fun loadingInfo(){
-        var filePath = MyFileUtils.getFileDir(requireActivity()) +"/"+MyFileUtils.fileName
-        var content = MyFileUtils.readFile(filePath)
-        if (!content.isNullOrEmpty()){
-            content.trim()
-            if (content.length>5){
-                showReadAlert(requireActivity(), content)
-            }else{
-                Toast.makeText(requireActivity(),"加载的文件内容为空", Toast.LENGTH_LONG).show()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (!Environment.isExternalStorageManager()){
+                showAllFilesPermissionAlert(requireActivity())
+                return
             }
-        }else{
-            Toast.makeText(requireActivity(),"加载的文件不存在", Toast.LENGTH_LONG).show()
+            openFile()
         }
     }
-    private fun showReadAlert(context: Context, content: String){
+
+    private var openFileResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){result ->
+        //处理返回的结果
+        val code = result.resultCode //返回码 如：Activity.RESULT_OK、Activity.RESULT_CANCELED
+        val data = result.data
+
+//        链接：https://juejin.cn/post/7237014602751279161
+
+        if (code == Activity.RESULT_OK) {
+            // The result data contains a URI for the document or directory that
+            // the user selected.
+            data?.data?.also { uri ->
+                // Perform operations on the document using its URI.
+
+                var filePath = MyFileUtils.getFilePathByUri(requireActivity(),uri)
+                println("ddddd filePath=$filePath")
+                if (filePath != null){
+                    var content = MyFileUtils.readFile(filePath)
+                    if (!content.isNullOrEmpty()){
+                        content.trim()
+                        if (content.length>5){
+                            setDecryptPasswordAlert(requireActivity(), content)
+                        }else{
+                            Toast.makeText(requireActivity(),"加载的文件内容为空",Toast.LENGTH_LONG).show()
+                        }
+                    }else{
+                        Toast.makeText(requireActivity(),"加载的文件内容为空",Toast.LENGTH_LONG).show()
+                    }
+                }else{
+                    Toast.makeText(requireActivity(),"加载的文件不存在",Toast.LENGTH_LONG).show()
+                }
+            }
+        }
+    }
+    private fun openFile() {
+        val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "text/plain"
+
+            // Optionally, specify a URI for the file that should appear in the
+            // system file picker when it loads.
+            //选择器初始化uri
+            val pickerInitialUri: Uri = DocumentsContract.buildDocumentUri(
+                    "com.android.externalstorage.documents",
+                    "primary:Documents"
+            )
+            putExtra(DocumentsContract.EXTRA_INITIAL_URI, pickerInitialUri)
+        }
+        openFileResultLauncher.launch(intent)
+    }
+    private fun showAllFilesPermissionAlert(context: Context){
+        var builder = AlertDialog.Builder(context)
+        builder.setTitle("提示")
+        builder.setMessage("从本地文件加载服务器和账号信息，需申请所有文件访问权限")
+        builder.setCancelable(false)
+        builder.setPositiveButton("确认",null)
+        builder.setNegativeButton("取消",null)
+        var dialogs:AlertDialog = builder.create()
+        if (!dialogs.isShowing){
+            dialogs.show()
+        }
+        dialogs.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
+                data = Uri.fromParts("package", context.packageName, null)
+            }
+            requestAllFilesPermissionResultLauncher.launch(intent)
+            dialogs.cancel()
+        }
+        dialogs.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+            dialogs.cancel()
+        }
+    }
+    private var requestAllFilesPermissionResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){ result ->
+        println("result=${result}")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (Environment.isExternalStorageManager()){
+                openFile()
+            }else{
+                //其他操作
+            }
+        }
+    }
+    private fun setDecryptPasswordAlert(context: Context, content: String){
         var builder = AlertDialog.Builder(context)
         builder.setTitle("提示")
         builder.setMessage("是否加载服务器和账号信息")
@@ -137,12 +220,17 @@ class FtueAuthCombinedLoginFragment :
                     if (redInfo.isEmpty()){
                         Toast.makeText(context,"解密口令错误",Toast.LENGTH_LONG).show()
                     }else{
-                        val jsonObject = JSONObject(redInfo)
-                        val serverUrl = jsonObject.getString("serverUrl")
-                        val account = jsonObject.getString("account")
-                        views.loginEditText.setText(account)
-                        Timber.i("dddddd serverUrl =$serverUrl")
-                        Timber.i("dddddd account =$account")
+                        try {
+                            val jsonObject = JSONObject(redInfo)
+                            val serverUrl = jsonObject.getString("serverUrl")
+                            val account = jsonObject.getString("account")
+                            views.loginEditText.setText(account)
+                            viewModel.handle(OnboardingAction.HomeServerChange.EditHomeServer(serverUrl))
+                            Timber.i("dddddd serverUrl =$serverUrl")
+                            Timber.i("dddddd account =$account")
+                        } catch (e: Exception) {
+                            requireActivity().toast("请选择正确的文件")
+                        }
                         dialogs.cancel()
                     }
                 }

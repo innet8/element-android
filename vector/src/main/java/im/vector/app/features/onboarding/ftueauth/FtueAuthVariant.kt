@@ -16,13 +16,20 @@
 
 package im.vector.app.features.onboarding.ftueauth
 
+import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
 import android.os.Parcelable
+import android.provider.DocumentsContract
+import android.provider.Settings
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.core.view.ViewCompat
 import androidx.core.view.children
@@ -66,6 +73,7 @@ import org.json.JSONObject
 import org.matrix.android.sdk.api.auth.registration.Stage
 import org.matrix.android.sdk.api.auth.toLocalizedLoginTerms
 import org.matrix.android.sdk.api.extensions.tryOrNull
+import timber.log.Timber
 import java.io.File
 
 private const val FRAGMENT_REGISTRATION_STAGE_TAG = "FRAGMENT_REGISTRATION_STAGE_TAG"
@@ -490,10 +498,103 @@ class FtueAuthVariant(
 
     private fun onAccountSignedIn() {
         navigateToHome()
-//        showSaveAlert(activity)
+//        isSaveBaseInfo(activity)
     }
+    private var createFileResultLauncher = activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()){result ->
+        //处理返回的结果
+        val code = result.resultCode //返回码 如：Activity.RESULT_OK、Activity.RESULT_CANCELED
+        val data = result.data
 
-    private fun showSaveAlert(context: Context){
+//        链接：https://juejin.cn/post/7237014602751279161
+
+        if (code == Activity.RESULT_OK) {
+            // The result data contains a URI for the document or directory that
+            // the user selected.
+            data?.data?.also { uri ->
+                // Perform operations on the document using its URI.
+                setEncryptPasswordAlert(activity,uri)
+            }
+        } else {
+            navigateToHome()
+        }
+    }
+    //创建文件
+    private fun createFile() {
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TITLE, "baseInfo.txt")
+            // Optionally, specify a URI for the directory that should be opened in
+            // the system file picker before your app creates the document.
+            //选择器初始化uri
+            val pickerInitialUri: Uri = DocumentsContract.buildDocumentUri(
+                    "com.android.externalstorage.documents",
+                    "primary:Documents"
+            )
+            putExtra(DocumentsContract.EXTRA_INITIAL_URI, pickerInitialUri)
+        }
+        createFileResultLauncher.launch(intent)
+    }
+    private var requestAllFilesPermissionResultLauncher = activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()){ result ->
+        println("result=${result}")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+            if (Environment.isExternalStorageManager()){
+                createFile()
+            }else{
+                //其他操作
+                navigateToHome()
+            }
+        }
+    }
+    private fun isSaveBaseInfo(context: Context){
+        var builder = AlertDialog.Builder(context)
+        builder.setTitle("提示")
+        builder.setMessage("是否缓存服务器和账号信息")
+        builder.setCancelable(false)
+        builder.setPositiveButton("确认",null)
+        builder.setNegativeButton("取消",null)
+        var dialogs:AlertDialog = builder.create()
+        if (!dialogs.isShowing){
+            dialogs.show()
+        }
+        dialogs.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+                if (!Environment.isExternalStorageManager()){
+                    showAllFilesPermissionAlert(activity)
+                }else{
+                    createFile()
+                }
+            }
+            dialogs.cancel()
+        }
+        dialogs.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+            navigateToHome()
+            dialogs.cancel()
+        }
+    }
+    private fun showAllFilesPermissionAlert(context: Context){
+        var builder = AlertDialog.Builder(context)
+        builder.setTitle("提示")
+        builder.setMessage("保存信息到本地文件，需申请所有文件访问权限")
+        builder.setCancelable(false)
+        builder.setPositiveButton("确认",null)
+        builder.setNegativeButton("取消",null)
+        var dialogs:AlertDialog = builder.create()
+        if (!dialogs.isShowing){
+            dialogs.show()
+        }
+        dialogs.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
+            intent.data = Uri.fromParts("package", context.packageName, null)
+            requestAllFilesPermissionResultLauncher.launch(intent)
+            dialogs.cancel()
+        }
+        dialogs.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+            navigateToHome()
+            dialogs.cancel()
+        }
+    }
+    private fun setEncryptPasswordAlert(context: Context, uri: Uri){
         var builder = AlertDialog.Builder(context)
         builder.setTitle("提示")
         builder.setMessage("是否存储服务器和账号信息")
@@ -519,11 +620,14 @@ class FtueAuthVariant(
                     obj.put("serverUrl",serverUrl)
                     obj.put("account",account)
                     var content = AESCryptUtils.encrypt(obj.toString(),input)
-                    var filePath = File(MyFileUtils.getFileDir(context)+"/"+MyFileUtils.fileName)
-                    MyFileUtils.writeText(filePath,content)
-
+                    var filePath = MyFileUtils.getFilePathByUri(activity,uri)
+                    val realFilePath = File(filePath.toString())
+                    MyFileUtils.writeText(realFilePath,content)
+                    val fileLength = MyFileUtils.getLength(realFilePath)
+                    if (fileLength>0){
+                        Toast.makeText(context,"保存成功",Toast.LENGTH_LONG).show()
+                    }
                     navigateToHome()
-
                     dialogs.cancel()
                 }
             }else{
