@@ -258,7 +258,7 @@ class UserListViewModel @AssistedInject constructor(
                         .userService()
                         .searchUsersDirectory(search, 50, state.excludedUserIds.orEmpty())
                         .sortedBy { it.toMatrixItem().firstLetterOfDisplayName() }
-                val userProfile = if (MatrixPatterns.isUserId(search)) {
+                var userProfile = if (MatrixPatterns.isUserId(search)) {
                     val user = tryOrNull { session.profileService().getProfileAsUser(search) }
                     setState { copy(unknownUserId = search.takeIf { user == null }) }
                     User(
@@ -268,6 +268,23 @@ class UserListViewModel @AssistedInject constructor(
                     )
                 } else {
                     null
+                }
+                if (searchResult.isEmpty()){
+                    val regex = Regex("[^\\w]")
+                    val sanitizedInput = regex.replace(search, "")
+
+                    val tempSearch = "@$sanitizedInput:${session.sessionParams.homeServerHost}"
+                    userProfile = if (MatrixPatterns.isUserId(tempSearch)) {
+                        val user = tryOrNull { session.profileService().getProfileAsUser(tempSearch) }
+                        setState { copy(unknownUserId = tempSearch.takeIf { user == null }) }
+                        User(
+                                userId = tempSearch,
+                                displayName = user?.displayName,
+                                avatarUrl = user?.avatarUrl
+                        )
+                    } else {
+                        null
+                    }
                 }
                 if (userProfile == null || searchResult.any { it.userId == userProfile.userId }) {
                     searchResult
