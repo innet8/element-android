@@ -715,10 +715,11 @@ class HomeActivity :
             // open_url=
             // element://synapse.huofu.vip:8009?rgs_token=RRYxOqa
             val url: String = activeSessionHolder.getActiveSession().sessionParams.homeServerUrlBase
-            views.inviteLink.text = "${url}_matrix/static/?open_url="+ appInviteLink
-            views.inviteQr.setData(appInviteLink)
-        }
+            var shareInviteLink = "${url}_matrix/static/?open_url="+ appInviteLink
 
+            views.inviteLink.text = shareInviteLink
+            views.inviteQr.setData(shareInviteLink)
+        }
 
     }
     private fun getInviteLink(url: String){

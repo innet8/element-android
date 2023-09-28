@@ -86,6 +86,8 @@ import org.matrix.android.sdk.api.failure.isUsernameInUse
 import org.matrix.android.sdk.api.failure.isWeakPassword
 import reactivecircus.flowbinding.android.widget.textChanges
 import timber.log.Timber
+import java.net.URI
+import java.net.URL
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import javax.inject.Inject
@@ -175,17 +177,73 @@ class FtueAuthCombinedRegisterFragment :
         }
     }
     private fun onQrCodeScanned(scannedQrCode: String) {
-        if (scannedQrCode.contains("rgs_token=")){
-            val urlLinkAfter: String = scannedQrCode.toString().substringAfter("rgs_token=")
-            Timber.d("Scanned QR code: $urlLinkAfter")
-            if (!urlLinkAfter.isNullOrBlank()){
-                views.createAccountInvite.setText(urlLinkAfter)
-            }else{
-                Toast.makeText(activity,"无效的二维码",Toast.LENGTH_SHORT).show()
+        var host = ""
+        var inventCode = ""
+        try {
+            val uri = URI(scannedQrCode)
+            val query = uri.query
+
+            // 解析查询参数
+            val parameters = query.split("&").associate {
+                val key = "open_url="
+                val value = it.substringAfter(key)
+                key to value
             }
-        }else{
+
+            var schemeUrl = ""
+            // 打印查询参数
+            for ((key, value) in parameters) {
+                if (key == "open_url="){
+                    schemeUrl = value
+                }
+            }
+
+            println("schemeUrl:$schemeUrl")
+            val realUri = URI(schemeUrl)
+            host = realUri.host
+
+            var realQuery = realUri.query
+            println("realQuery:$realQuery")
+            // 解析查询参数
+            val realParameters = realQuery.split("&").associate {
+
+                val (key, value) = it.split("=")
+                key to value
+            }
+            // 打印查询参数
+            for ((key, value) in realParameters) {
+                if (key == "rgs_token") {
+                    inventCode = value
+                }
+
+            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
+            println("转化失败")
             Toast.makeText(activity,R.string.invalid_qr_code_uri,Toast.LENGTH_SHORT).show()
         }
+        println("转化成功:$inventCode, $host")
+
+        if (inventCode !== "" && host !== "") {
+            viewModel.handle(OnboardingAction.HomeServerChange.EditHomeServer("https://$host"))
+            views.createAccountInvite.setText(inventCode)
+        } else {
+            Toast.makeText(activity,R.string.invalid_qr_code_uri,Toast.LENGTH_SHORT).show()
+        }
+
+//
+//        if (scannedQrCode.contains("rgs_token=")){
+//            val urlLinkAfter: String = scannedQrCode.toString().substringAfter("rgs_token=")
+//            Timber.d("Scanned QR code: $urlLinkAfter")
+//            if (!urlLinkAfter.isNullOrBlank()){
+//                views.createAccountInvite.setText(urlLinkAfter)
+//            }else{
+//                Toast.makeText(activity,"无效的二维码",Toast.LENGTH_SHORT).show()
+//            }
+//        }else{
+//            Toast.makeText(activity,R.string.invalid_qr_code_uri,Toast.LENGTH_SHORT).show()
+//        }
 
     }
 
