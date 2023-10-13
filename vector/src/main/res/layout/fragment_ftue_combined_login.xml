@@ -214,19 +214,7 @@
                 android:maxLines="1" />
 
         </com.google.android.material.textfield.TextInputLayout>
-        <Button
-            android:visibility="gone"
-            android:id="@+id/loginLoadingInfo"
-            style="@style/Widget.Vector.Button.Text.Login"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Loading Info"
-            android:textAllCaps="true"
-            android:textColor="?colorSecondary"
-            app:layout_constraintBottom_toTopOf="@id/actionSpacing"
-            app:layout_constraintHorizontal_bias="1"
-            app:layout_constraintStart_toStartOf="@id/loginGutterStart"
-            app:layout_constraintTop_toBottomOf="@id/loginPasswordInput" />
+
         <Button
             android:id="@+id/loginForgotPassword"
             style="@style/Widget.Vector.Button.Text.Login"
@@ -310,17 +298,29 @@
             app:layout_constraintStart_toStartOf="@id/loginGutterStart"
             app:layout_constraintTop_toBottomOf="@id/loginWithQrCode"
             tools:signMode="signup" />
+        <Button
+            android:visibility="visible"
+            android:id="@+id/loginLoadingInfo"
+            style="@style/Widget.Vector.Button.Text.Login"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="@string/import_service_account_file"
+            android:textAllCaps="false"
+            android:textColor="?colorSecondary"
+            app:layout_constraintEnd_toEndOf="@id/loginGutterEnd"
+            app:layout_constraintStart_toStartOf="@id/loginGutterStart"
+            app:layout_constraintTop_toBottomOf="@id/ssoButtons"/>
         <TextView
             android:id="@+id/official_website"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:paddingTop="16dp"
+            android:paddingTop="0dp"
             android:paddingBottom="16dp"
             android:text="@string/official_website"
             android:textColor="?colorSecondary"
             app:layout_constraintEnd_toEndOf="@id/loginGutterEnd"
             app:layout_constraintStart_toStartOf="@id/loginGutterStart"
-            app:layout_constraintTop_toBottomOf="@id/ssoButtons"/>
+            app:layout_constraintTop_toBottomOf="@id/loginLoadingInfo"/>
 
     </androidx.constraintlayout.widget.ConstraintLayout>
 

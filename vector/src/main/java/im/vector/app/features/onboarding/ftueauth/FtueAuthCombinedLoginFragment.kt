@@ -26,10 +26,12 @@ import android.os.Bundle
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.Settings
+import android.text.InputFilter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.EditText
+import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -70,6 +72,8 @@ import org.json.JSONObject
 import org.matrix.android.sdk.api.auth.SSOAction
 import reactivecircus.flowbinding.android.widget.textChanges
 import timber.log.Timber
+import java.io.BufferedReader
+import java.io.InputStreamReader
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -106,18 +110,12 @@ class FtueAuthCombinedLoginFragment :
     }
 
     private fun loadingInfo(){
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (!Environment.isExternalStorageManager()){
-                showAllFilesPermissionAlert(requireActivity())
-                return
-            }
-            openFile()
-        }
+        openFile()
     }
 
     private var openFileResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){result ->
         //处理返回的结果
-        val code = result.resultCode //返回码 如：Activity.RESULT_OK、Activity.RESULT_CANCELED
+        val code = result.resultCode //返回码 如：Activity.RESULT_OK、Activity.RESULT_CANCELED76500 3600 6717 80100 86817
         val data = result.data
 
 //        链接：https://juejin.cn/post/7237014602751279161
@@ -128,25 +126,33 @@ class FtueAuthCombinedLoginFragment :
             data?.data?.also { uri ->
                 // Perform operations on the document using its URI.
 
-                var filePath = MyFileUtils.getFilePathByUri(requireActivity(),uri)
-                println("ddddd filePath=$filePath")
-                if (filePath != null){
-                    var content = MyFileUtils.readFile(filePath)
-                    if (!content.isNullOrEmpty()){
-                        content.trim()
-                        if (content.length>5){
-                            setDecryptPasswordAlert(requireActivity(), content)
-                        }else{
-                            Toast.makeText(requireActivity(),"加载的文件内容为空",Toast.LENGTH_LONG).show()
-                        }
+                var content = readTextFromUri(uri)
+                if (!content.isNullOrEmpty()){
+                    content.trim()
+                    if (content.length>5){
+                        setDecryptPasswordAlert(requireActivity(), content)
                     }else{
-                        Toast.makeText(requireActivity(),"加载的文件内容为空",Toast.LENGTH_LONG).show()
+                        Toast.makeText(requireActivity(),R.string.import_service_account_file_is_empty,Toast.LENGTH_LONG).show()
                     }
                 }else{
-                    Toast.makeText(requireActivity(),"加载的文件不存在",Toast.LENGTH_LONG).show()
+                    Toast.makeText(requireActivity(),R.string.import_service_account_file_is_empty,Toast.LENGTH_LONG).show()
                 }
             }
         }
+    }
+    private fun readTextFromUri(uri: Uri): String {
+        val contentResolver = requireActivity().contentResolver
+        val stringBuilder = StringBuilder()
+        contentResolver.openInputStream(uri)?.use { inputStream ->
+            BufferedReader(InputStreamReader(inputStream)).use { reader ->
+                var line: String? = reader.readLine()
+                while (line != null) {
+                    stringBuilder.append(line)
+                    line = reader.readLine()
+                }
+            }
+        }
+        return stringBuilder.toString()
     }
     private fun openFile() {
         val intent = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
@@ -164,83 +170,72 @@ class FtueAuthCombinedLoginFragment :
         }
         openFileResultLauncher.launch(intent)
     }
-    private fun showAllFilesPermissionAlert(context: Context){
-        var builder = AlertDialog.Builder(context)
-        builder.setTitle("提示")
-        builder.setMessage("从本地文件加载服务器和账号信息，需申请所有文件访问权限")
-        builder.setCancelable(false)
-        builder.setPositiveButton("确认",null)
-        builder.setNegativeButton("取消",null)
-        var dialogs:AlertDialog = builder.create()
-        if (!dialogs.isShowing){
-            dialogs.show()
-        }
-        dialogs.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION).apply {
-                data = Uri.fromParts("package", context.packageName, null)
-            }
-            requestAllFilesPermissionResultLauncher.launch(intent)
-            dialogs.cancel()
-        }
-        dialogs.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
-            dialogs.cancel()
-        }
-    }
-    private var requestAllFilesPermissionResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){ result ->
-        println("result=${result}")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (Environment.isExternalStorageManager()){
-                openFile()
-            }else{
-                //其他操作
-            }
-        }
-    }
+
     private fun setDecryptPasswordAlert(context: Context, content: String){
         var builder = AlertDialog.Builder(context)
-        builder.setTitle("提示")
-        builder.setMessage("是否加载服务器和账号信息")
+        builder.setTitle(R.string.popup_service_account_title)
+        builder.setMessage(R.string.popup_service_account_file_loading_msg)
         val editText = EditText(context)
-        editText.hint = "请设置解密口令"
-        builder.setView(editText)
+        setupEditTextInputLengthLimit(editText, 16)
+        editText.hint = context.getString(R.string.popup_service_account_edittext_hint)
+
+        val linearLayout = LinearLayout(context)
+        linearLayout.orientation = LinearLayout.VERTICAL
+        linearLayout.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        val layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        layoutParams.setMargins(48, 0, 48, 0)
+        editText.layoutParams = layoutParams
+        linearLayout.addView(editText)
+
+        builder.setView(linearLayout)
         builder.setCancelable(false)
-        builder.setPositiveButton("确认",null)
-        builder.setNegativeButton("取消",null)
+        builder.setPositiveButton(R.string.dialog_title_confirmation,null)
+        builder.setNegativeButton(R.string.action_cancel,null)
         var dialogs: AlertDialog = builder.create()
         if (!dialogs.isShowing){
             dialogs.show()
         }
         dialogs.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
             var input = editText.text.toString()
-            if (input.isNotEmpty()){
-                if (input.length<16){
-                    Toast.makeText(context,"最低长度为16",Toast.LENGTH_LONG).show()
-                }else{
-                    var redInfo = AESCryptUtils.decrypt(content,input)
-                    if (redInfo.isEmpty()){
-                        Toast.makeText(context,"解密口令错误",Toast.LENGTH_LONG).show()
-                    }else{
-                        try {
-                            val jsonObject = JSONObject(redInfo)
-                            val serverUrl = jsonObject.getString("serverUrl")
-                            val account = jsonObject.getString("account")
-                            views.loginEditText.setText(account)
-                            viewModel.handle(OnboardingAction.HomeServerChange.EditHomeServer(serverUrl))
-                            Timber.i("dddddd serverUrl =$serverUrl")
-                            Timber.i("dddddd account =$account")
-                        } catch (e: Exception) {
-                            requireActivity().toast("请选择正确的文件")
-                        }
-                        dialogs.cancel()
-                    }
-                }
+            val targetLength = 16
+            val paddingChar = '0'
+
+            if (input.length < 16) {
+                input = input.padEnd(targetLength, paddingChar)
+            }
+            var redInfo = AESCryptUtils.decrypt(content,input)
+            if (redInfo.isEmpty()){
+                Toast.makeText(context,R.string.popup_service_account_password_error,Toast.LENGTH_LONG).show()
             }else{
-                Toast.makeText(context,"请设置解密口令",Toast.LENGTH_LONG).show()
+                try {
+                    val pattern = Regex("@(\\w+):([^\\s:]+)")
+                    val matchResult = pattern.find(redInfo)
+
+                    if (matchResult != null) {
+                        val (substringAccount, substringHost) = matchResult.destructured
+                        val serverUrl = "https://${substringHost}/"
+                        views.loginEditText.setText(substringAccount)
+                        viewModel.handle(OnboardingAction.HomeServerChange.EditHomeServer(serverUrl))
+                    }
+                } catch (e: Exception) {
+                    requireActivity().toast("请选择正确的文件")
+                }
+                dialogs.cancel()
             }
         })
         dialogs.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
             dialogs.cancel()
         }
+    }
+    private fun setupEditTextInputLengthLimit(editText: EditText, maxLength: Int) {
+        val filters = arrayOf<InputFilter>(InputFilter.LengthFilter(maxLength))
+        editText.filters = filters
     }
     private fun configureQrCodeLoginButtonVisibility(canLoginWithQrCode: Boolean) {
         views.loginWithQrCode.isVisible = canLoginWithQrCode

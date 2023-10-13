@@ -2855,4 +2855,13 @@
     <string name="popup_invite_code_determine">确定</string>
     <string name="popup_save_success">保存到相册成功</string>
     <string name="popup_save_fail">保存到相册失败</string>
+    <string name="import_service_account_file">导入文件</string>
+    <string name="export_service_account_file">导出文件</string>
+    <string name="export_summary_service_account_file">导出服务地址和账号信息</string>
+    <string name="popup_service_account_title">提示</string>
+    <string name="popup_service_account_content">是否存储服务器账号信息</string>
+    <string name="popup_service_account_edittext_hint">请设置解密口令</string>
+    <string name="popup_service_account_password_error">解密口令错误</string>
+    <string name="import_service_account_file_is_empty">导入的文件为空</string>
+    <string name="popup_service_account_file_loading_msg">加载服务器和账号信息</string>
 </resources>

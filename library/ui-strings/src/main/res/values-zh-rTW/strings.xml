@@ -2907,4 +2907,13 @@
     <string name="popup_invite_code_determine">確定</string>
     <string name="popup_save_success">保存到相冊成功</string>
     <string name="popup_save_fail">保存到相冊失敗</string>
+    <string name="import_service_account_file">導入文件</string>
+    <string name="export_service_account_file">匯出文件</string>
+    <string name="export_summary_service_account_file">匯出服務地址和帳號訊息</string>
+    <string name="popup_service_account_title">提示</string>
+    <string name="popup_service_account_content">是否儲存伺服器和帳號訊息</string>
+    <string name="popup_service_account_edittext_hint">請設定解密口令</string>
+    <string name="popup_service_account_password_error">解密口令錯誤</string>
+    <string name="import_service_account_file_is_empty">導入的檔案為空</string>
+    <string name="popup_service_account_file_loading_msg">載入伺服器和帳號訊息</string>
 </resources>

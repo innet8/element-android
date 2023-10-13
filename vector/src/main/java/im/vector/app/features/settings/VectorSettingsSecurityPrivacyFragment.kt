@@ -18,13 +18,22 @@
 package im.vector.app.features.settings
 
 import android.app.Activity
+import android.content.ContentResolver
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.provider.DocumentsContract
+import android.text.InputFilter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.appcompat.app.AlertDialog
 import androidx.core.content.ContextCompat
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
@@ -63,6 +72,7 @@ import im.vector.app.features.crypto.keysbackup.settings.KeysBackupManageActivit
 import im.vector.app.features.crypto.recover.BootstrapBottomSheet
 import im.vector.app.features.crypto.recover.SetupMode
 import im.vector.app.features.navigation.Navigator
+import im.vector.app.features.onboarding.AESCryptUtils
 import im.vector.app.features.pin.PinCodeStore
 import im.vector.app.features.pin.PinMode
 import im.vector.app.features.raw.wellknown.getElementWellknown
@@ -79,6 +89,9 @@ import org.matrix.android.sdk.api.extensions.tryOrNull
 import org.matrix.android.sdk.api.raw.RawService
 import org.matrix.android.sdk.api.session.crypto.crosssigning.isVerified
 import org.matrix.android.sdk.api.session.crypto.model.DeviceInfo
+import java.io.FileNotFoundException
+import java.io.FileOutputStream
+import java.io.IOException
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -111,6 +124,10 @@ class VectorSettingsSecurityPrivacyFragment :
 
     private val cryptoInfoDeviceNamePreference by lazy {
         findPreference<VectorPreference>("SETTINGS_ENCRYPTION_INFORMATION_DEVICE_NAME_PREFERENCE_KEY")!!
+    }
+
+    private val exportFileTextPreference by lazy {
+        findPreference<VectorPreference>("SETTINGS_EXPORT_FILE_TEXT_KEY")!!
     }
 
     private val cryptoInfoDeviceIdPreference by lazy {
@@ -620,8 +637,116 @@ class VectorSettingsSecurityPrivacyFragment :
 
             true
         }
+
+        exportFileTextPreference.summary = requireActivity().getString(R.string.export_summary_service_account_file)
+        exportFileTextPreference.onPreferenceClickListener = Preference.OnPreferenceClickListener {
+            setEncryptPasswordAlert(requireContext())
+            true
+        }
     }
 
+    //创建文件
+    private fun createFile() {
+        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            type = "text/plain"
+            val appName = requireActivity().getString(R.string.app_name).replace(" ", "-")
+            val timestamp = "service-key"
+            putExtra(Intent.EXTRA_TITLE, "$appName-${timestamp}.txt")
+            //选择器初始化uri
+            val pickerInitialUri: Uri = DocumentsContract.buildDocumentUri(
+                    "com.android.externalstorage.documents",
+                    "primary:Documents"
+            )
+            putExtra(DocumentsContract.EXTRA_INITIAL_URI, pickerInitialUri)
+        }
+        createFileResultLauncher.launch(intent)
+    }
+
+    private var createFileResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){ result ->
+        //处理返回的结果
+        val code = result.resultCode
+        val data = result.data
+        if (code == Activity.RESULT_OK) {
+            // The result data contains a URI for the document or directory that
+            // the user selected.
+            data?.data?.also { uri ->
+                // Perform operations on the document using its URI.
+                alterDocument(uri, content = serviceKeyContent)
+            }
+        } else {
+        }
+    }
+
+    private var serviceKeyContent = ""
+    private fun setEncryptPasswordAlert(context: Context){
+        var builder = AlertDialog.Builder(context)
+        builder.setTitle(R.string.popup_service_account_title)
+        builder.setMessage(R.string.popup_service_account_content)
+        val editText = EditText(context)
+        setupEditTextInputLengthLimit(editText, 16)
+        editText.hint = context.getString(R.string.popup_service_account_edittext_hint)
+
+        val linearLayout = LinearLayout(context)
+        linearLayout.orientation = LinearLayout.VERTICAL
+        linearLayout.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        val layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        layoutParams.setMargins(48, 0, 48, 0)
+        editText.layoutParams = layoutParams
+        linearLayout.addView(editText)
+
+        builder.setView(linearLayout)
+        builder.setCancelable(false)
+        builder.setPositiveButton(R.string.dialog_title_confirmation,null)
+        builder.setNegativeButton(R.string.action_cancel,null)
+        var dialogs: AlertDialog = builder.create()
+        if (!dialogs.isShowing){
+            dialogs.show()
+        }
+        dialogs.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
+            var input = editText.text.toString()
+            val targetLength = 16
+            val paddingChar = '0'
+
+            if (input.length < 16) {
+                input = input.padEnd(targetLength, paddingChar)
+            }
+            var homeServerAccountInfo = activeSessionHolder.getActiveSession().sessionParams.userId
+            serviceKeyContent = AESCryptUtils.encrypt(homeServerAccountInfo,input)
+            createFile()
+            dialogs.cancel()
+        })
+        dialogs.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+            dialogs.cancel()
+        }
+    }
+    private fun setupEditTextInputLengthLimit(editText: EditText, maxLength: Int) {
+        val filters = arrayOf<InputFilter>(InputFilter.LengthFilter(maxLength))
+        editText.filters = filters
+    }
+    private fun alterDocument(uri: Uri,content: String) {
+        val contentResolver: ContentResolver = requireActivity().contentResolver
+        try {
+            contentResolver.openFileDescriptor(uri, "w")?.use {
+                FileOutputStream(it.fileDescriptor).use {
+                    it.write(
+                            ("$content\n")
+                                    .toByteArray()
+                    )
+                }
+            }
+        } catch (e: FileNotFoundException) {
+            e.printStackTrace()
+        } catch (e: IOException) {
+            e.printStackTrace()
+        }
+    }
     // ==============================================================================================================
     // devices list
     // ==============================================================================================================

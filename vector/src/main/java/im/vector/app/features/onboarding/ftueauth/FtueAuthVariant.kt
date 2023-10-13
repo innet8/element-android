@@ -16,21 +16,11 @@
 
 package im.vector.app.features.onboarding.ftueauth
 
-import android.app.Activity
-import android.content.Context
 import android.content.Intent
-import android.net.Uri
-import android.os.Build
-import android.os.Environment
 import android.os.Parcelable
-import android.provider.DocumentsContract
-import android.provider.Settings
 import android.view.View
 import android.view.ViewGroup
-import android.widget.EditText
 import android.widget.Toast
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.appcompat.app.AlertDialog
 import androidx.core.view.ViewCompat
 import androidx.core.view.children
 import androidx.core.view.isVisible
@@ -54,8 +44,6 @@ import im.vector.app.features.login.LoginMode
 import im.vector.app.features.login.ServerType
 import im.vector.app.features.login.SignMode
 import im.vector.app.features.login.TextInputFormFragmentMode
-import im.vector.app.features.onboarding.AESCryptUtils
-import im.vector.app.features.onboarding.MyFileUtils
 import im.vector.app.features.onboarding.OnboardingAction
 import im.vector.app.features.onboarding.OnboardingActivity
 import im.vector.app.features.onboarding.OnboardingFlow
@@ -63,18 +51,14 @@ import im.vector.app.features.onboarding.OnboardingVariant
 import im.vector.app.features.onboarding.OnboardingViewEvents
 import im.vector.app.features.onboarding.OnboardingViewModel
 import im.vector.app.features.onboarding.OnboardingViewState
-import im.vector.app.features.onboarding.SpHelperUtils
 import im.vector.app.features.onboarding.ftueauth.terms.FtueAuthLegacyStyleTermsFragment
 import im.vector.app.features.onboarding.ftueauth.terms.FtueAuthTermsFragment
 import im.vector.app.features.onboarding.ftueauth.terms.FtueAuthTermsLegacyStyleFragmentArgument
 import im.vector.app.features.settings.locale.LocalePickerFragment
 import im.vector.lib.core.utils.compat.getParcelableExtraCompat
-import org.json.JSONObject
 import org.matrix.android.sdk.api.auth.registration.Stage
 import org.matrix.android.sdk.api.auth.toLocalizedLoginTerms
 import org.matrix.android.sdk.api.extensions.tryOrNull
-import timber.log.Timber
-import java.io.File
 
 private const val FRAGMENT_REGISTRATION_STAGE_TAG = "FRAGMENT_REGISTRATION_STAGE_TAG"
 private const val FRAGMENT_LOGIN_TAG = "FRAGMENT_LOGIN_TAG"
@@ -498,147 +482,8 @@ class FtueAuthVariant(
 
     private fun onAccountSignedIn() {
         navigateToHome()
-//        isSaveBaseInfo(activity)
     }
-    private var createFileResultLauncher = activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()){result ->
-        //处理返回的结果
-        val code = result.resultCode //返回码 如：Activity.RESULT_OK、Activity.RESULT_CANCELED
-        val data = result.data
 
-//        链接：https://juejin.cn/post/7237014602751279161
-
-        if (code == Activity.RESULT_OK) {
-            // The result data contains a URI for the document or directory that
-            // the user selected.
-            data?.data?.also { uri ->
-                // Perform operations on the document using its URI.
-                setEncryptPasswordAlert(activity,uri)
-            }
-        } else {
-            navigateToHome()
-        }
-    }
-    //创建文件
-    private fun createFile() {
-        val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-            addCategory(Intent.CATEGORY_OPENABLE)
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TITLE, "baseInfo.txt")
-            // Optionally, specify a URI for the directory that should be opened in
-            // the system file picker before your app creates the document.
-            //选择器初始化uri
-            val pickerInitialUri: Uri = DocumentsContract.buildDocumentUri(
-                    "com.android.externalstorage.documents",
-                    "primary:Documents"
-            )
-            putExtra(DocumentsContract.EXTRA_INITIAL_URI, pickerInitialUri)
-        }
-        createFileResultLauncher.launch(intent)
-    }
-    private var requestAllFilesPermissionResultLauncher = activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()){ result ->
-        println("result=${result}")
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-            if (Environment.isExternalStorageManager()){
-                createFile()
-            }else{
-                //其他操作
-                navigateToHome()
-            }
-        }
-    }
-    private fun isSaveBaseInfo(context: Context){
-        var builder = AlertDialog.Builder(context)
-        builder.setTitle("提示")
-        builder.setMessage("是否缓存服务器和账号信息")
-        builder.setCancelable(false)
-        builder.setPositiveButton("确认",null)
-        builder.setNegativeButton("取消",null)
-        var dialogs:AlertDialog = builder.create()
-        if (!dialogs.isShowing){
-            dialogs.show()
-        }
-        dialogs.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
-                if (!Environment.isExternalStorageManager()){
-                    showAllFilesPermissionAlert(activity)
-                }else{
-                    createFile()
-                }
-            }
-            dialogs.cancel()
-        }
-        dialogs.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
-            navigateToHome()
-            dialogs.cancel()
-        }
-    }
-    private fun showAllFilesPermissionAlert(context: Context){
-        var builder = AlertDialog.Builder(context)
-        builder.setTitle("提示")
-        builder.setMessage("保存信息到本地文件，需申请所有文件访问权限")
-        builder.setCancelable(false)
-        builder.setPositiveButton("确认",null)
-        builder.setNegativeButton("取消",null)
-        var dialogs:AlertDialog = builder.create()
-        if (!dialogs.isShowing){
-            dialogs.show()
-        }
-        dialogs.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
-            val intent = Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION)
-            intent.data = Uri.fromParts("package", context.packageName, null)
-            requestAllFilesPermissionResultLauncher.launch(intent)
-            dialogs.cancel()
-        }
-        dialogs.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
-            navigateToHome()
-            dialogs.cancel()
-        }
-    }
-    private fun setEncryptPasswordAlert(context: Context, uri: Uri){
-        var builder = AlertDialog.Builder(context)
-        builder.setTitle("提示")
-        builder.setMessage("是否存储服务器和账号信息")
-        val editText = EditText(context)
-        editText.hint = "请设置解密口令"
-        builder.setView(editText)
-        builder.setCancelable(false)
-        builder.setPositiveButton("确认",null)
-        builder.setNegativeButton("取消",null)
-        var dialogs: AlertDialog = builder.create()
-        if (!dialogs.isShowing){
-            dialogs.show()
-        }
-        dialogs.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
-            var input = editText.text.toString()
-            if (input.isNotEmpty()){
-                if (input.length<16){
-                    Toast.makeText(context,"最低长度为16",Toast.LENGTH_LONG).show()
-                }else{
-                    val serverUrl = SpHelperUtils.get(context,"serverUrl","")
-                    val account = SpHelperUtils.get(context,"account","")
-                    val obj = JSONObject()
-                    obj.put("serverUrl",serverUrl)
-                    obj.put("account",account)
-                    var content = AESCryptUtils.encrypt(obj.toString(),input)
-                    var filePath = MyFileUtils.getFilePathByUri(activity,uri)
-                    val realFilePath = File(filePath.toString())
-                    MyFileUtils.writeText(realFilePath,content)
-                    val fileLength = MyFileUtils.getLength(realFilePath)
-                    if (fileLength>0){
-                        Toast.makeText(context,"保存成功",Toast.LENGTH_LONG).show()
-                    }
-                    navigateToHome()
-                    dialogs.cancel()
-                }
-            }else{
-                Toast.makeText(context,"请设置解密口令",Toast.LENGTH_LONG).show()
-            }
-        })
-        dialogs.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
-            navigateToHome()
-            dialogs.cancel()
-        }
-    }
     private fun onAccountCreated() {
         activity.supportFragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE)
         activity.replaceFragment(

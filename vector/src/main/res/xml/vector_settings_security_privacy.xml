@@ -153,6 +153,12 @@
             android:summary="@string/settings_security_prevent_screenshots_summary"
             android:title="@string/settings_security_prevent_screenshots_title" />
 
+        <im.vector.app.core.preference.VectorPreference
+            android:key="SETTINGS_EXPORT_FILE_TEXT_KEY"
+            android:persistent="false"
+            android:title="@string/export_service_account_file"
+            tools:summary="@string/export_summary_service_account_file" />
+
     </im.vector.app.core.preference.VectorPreferenceCategory>
 
 </androidx.preference.PreferenceScreen>

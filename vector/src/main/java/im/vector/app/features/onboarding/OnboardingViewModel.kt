@@ -629,7 +629,6 @@ class OnboardingViewModel @AssistedInject constructor(
                         action.password,
                         action.initialDeviceName
                 )
-                SpHelperUtils.put(applicationContext,"username",action.username)
                 reAuthHelper.data = action.password
                 onSessionCreated(result, authenticationDescription = AuthenticationDescription.Login)
             } catch (failure: Throwable) {
@@ -668,11 +667,6 @@ class OnboardingViewModel @AssistedInject constructor(
             AuthenticationDescription.Login -> {
                 setState { copy(isLoading = false, selectedAuthenticationState = SelectedAuthenticationState(authenticationDescription)) }
                 awaitState()
-                val account = SpHelperUtils.get(applicationContext,"username","")
-                if (account != null) {
-                    SpHelperUtils.put(applicationContext,"account",account)
-                }
-                SpHelperUtils.put(applicationContext,"serverUrl",session.sessionParams.homeServerUrlBase)
                 _viewEvents.post(OnboardingViewEvents.OnAccountSignedIn)
             }
         }

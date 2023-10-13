@@ -2877,4 +2877,13 @@
     <string name="popup_invite_code_determine">決定する</string>
     <string name="popup_save_success">アルバムに保存 成功</string>
     <string name="popup_save_fail">アルバムに保存 失敗</string>
+    <string name="import_service_account_file">ファイルのインポート</string>
+    <string name="export_service_account_file">ファイルのエクスポート</string>
+    <string name="export_summary_service_account_file">サービスアドレスとアカウント情報のエクスポート</string>
+    <string name="popup_service_account_title">ヒント</string>
+    <string name="popup_service_account_content">サーバーとアカウント情報を保存するかどうか</string>
+    <string name="popup_service_account_edittext_hint">復号化パスワードを設定してください</string>
+    <string name="popup_service_account_password_error">復号化パスワードエラー</string>
+    <string name="import_service_account_file_is_empty">インポートしたファイルが空です</string>
+    <string name="popup_service_account_file_loading_msg">サーバーとアカウント情報を読み込む</string>
 </resources>
