@@ -28,7 +28,6 @@ import androidx.autofill.HintConstants
 import androidx.core.text.isDigitsOnly
 import androidx.core.view.isVisible
 import androidx.lifecycle.lifecycleScope
-import com.airbnb.mvrx.activityViewModel
 import com.airbnb.mvrx.withState
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import dagger.hilt.android.AndroidEntryPoint
@@ -46,25 +45,20 @@ import im.vector.app.core.extensions.registerStartForActivityResult
 import im.vector.app.core.extensions.setOnFocusLostListener
 import im.vector.app.core.extensions.setOnImeDoneListener
 import im.vector.app.core.extensions.toReducedUrl
-import im.vector.app.core.utils.ensureProtocol
-import im.vector.app.core.utils.ensureTrailingSlash
-import im.vector.app.core.utils.openUrlInChromeCustomTab
 import im.vector.app.core.utils.openUrlInExternalBrowser
 import im.vector.app.databinding.FragmentFtueCombinedRegisterBinding
 import im.vector.app.features.login.LoginMode
 import im.vector.app.features.login.SSORedirectRouterActivity
 import im.vector.app.features.login.SocialLoginButtonsView
-import im.vector.app.features.login.qr.QrCodeLoginAction
 import im.vector.app.features.login.render
 import im.vector.app.features.onboarding.OnboardingAction
 import im.vector.app.features.onboarding.OnboardingAction.AuthenticateAction
 import im.vector.app.features.onboarding.OnboardingViewEvents
 import im.vector.app.features.onboarding.OnboardingViewState
 import im.vector.app.features.onboarding.SingleUrl
+import im.vector.app.features.onboarding.SpHelperUtils
 import im.vector.app.features.qrcode.QrCodeScannerActivity
 import im.vector.app.features.settings.VectorLocale
-import im.vector.app.features.usercode.UserCodeShareViewEvents
-import im.vector.app.features.usercode.UserCodeSharedViewModel
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
 import okhttp3.Call
@@ -73,8 +67,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okio.IOException
-import org.checkerframework.nonapi.io.github.classgraph.json.JSONUtils
-import org.checkerframework.org.apache.commons.lang3.SystemUtils
 import org.json.JSONObject
 import org.matrix.android.sdk.api.auth.SSOAction
 import org.matrix.android.sdk.api.failure.isHomeserverUnavailable
@@ -87,7 +79,6 @@ import org.matrix.android.sdk.api.failure.isWeakPassword
 import reactivecircus.flowbinding.android.widget.textChanges
 import timber.log.Timber
 import java.net.URI
-import java.net.URL
 import java.security.SecureRandom
 import java.security.cert.X509Certificate
 import javax.inject.Inject
@@ -127,6 +118,11 @@ class FtueAuthCombinedRegisterFragment :
 
         if (!SingleUrl.serviceUrl.isNullOrEmpty()){
             updateAddress(SingleUrl.serviceUrl)
+        }else{
+            val serviceUrl = SpHelperUtils.get(requireActivity(),"currentServiceUrl","")
+            if (!serviceUrl.toString().isNullOrEmpty() && serviceUrl != getString(R.string.matrix_org_server_url)){
+                updateAddress(serviceUrl.toString())
+            }
         }
         views.loginLanguageSelect.text = languageVectorLocale.localeToLocalisedString(languageVectorLocale.applicationLocale)
         views.loginLanguage.debouncedClicks{
@@ -140,6 +136,7 @@ class FtueAuthCombinedRegisterFragment :
     private fun updateAddress(address: String) {
         viewModel.handle(OnboardingAction.HomeServerChange.EditHomeServer(address))
         views.createAccountInvite.setText(SingleUrl.inviteCode)
+        SpHelperUtils.put(requireActivity(),"currentServiceUrl",address)
     }
 
     private fun canSubmit(account: CharSequence, password: CharSequence): Boolean {
@@ -226,8 +223,10 @@ class FtueAuthCombinedRegisterFragment :
         println("转化成功:$inventCode, $host")
 
         if (inventCode !== "" && host !== "") {
-            viewModel.handle(OnboardingAction.HomeServerChange.EditHomeServer("https://$host"))
+            var homeServerUrl = "https://$host"
+            viewModel.handle(OnboardingAction.HomeServerChange.EditHomeServer(homeServerUrl))
             views.createAccountInvite.setText(inventCode)
+            SpHelperUtils.put(requireActivity(),"currentServiceUrl",homeServerUrl)
         } else {
             Toast.makeText(activity,R.string.invalid_qr_code_uri,Toast.LENGTH_SHORT).show()
         }

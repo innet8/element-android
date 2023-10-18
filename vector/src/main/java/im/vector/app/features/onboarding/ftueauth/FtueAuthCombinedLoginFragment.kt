@@ -65,6 +65,7 @@ import im.vector.app.features.onboarding.MyFileUtils
 import im.vector.app.features.onboarding.OnboardingAction
 import im.vector.app.features.onboarding.OnboardingViewEvents
 import im.vector.app.features.onboarding.OnboardingViewState
+import im.vector.app.features.onboarding.SpHelperUtils
 import im.vector.app.features.settings.VectorLocale
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.launchIn
@@ -107,8 +108,15 @@ class FtueAuthCombinedLoginFragment :
         views.loginLanguage.debouncedClicks{
             viewModel.handle(OnboardingAction.PostViewEvent(OnboardingViewEvents.OnLanguageClicked))
         }
+        updateServerUrl()
     }
 
+    private fun updateServerUrl(){
+        val serviceUrl = SpHelperUtils.get(requireActivity(),"currentServiceUrl","")
+        if (!serviceUrl.toString().isNullOrEmpty() && serviceUrl != getString(R.string.matrix_org_server_url)){
+            viewModel.handle(OnboardingAction.HomeServerChange.EditHomeServer(serviceUrl.toString()))
+        }
+    }
     private fun loadingInfo(){
         openFile()
     }
