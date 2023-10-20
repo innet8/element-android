@@ -21,16 +21,21 @@ import android.app.Activity
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.provider.DocumentsContract
 import android.text.InputFilter
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.Window
+import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -73,6 +78,7 @@ import im.vector.app.features.crypto.recover.BootstrapBottomSheet
 import im.vector.app.features.crypto.recover.SetupMode
 import im.vector.app.features.navigation.Navigator
 import im.vector.app.features.onboarding.AESCryptUtils
+import im.vector.app.features.onboarding.ServerConfigPasswordFormattingUtils
 import im.vector.app.features.pin.PinCodeStore
 import im.vector.app.features.pin.PinMode
 import im.vector.app.features.raw.wellknown.getElementWellknown
@@ -640,11 +646,88 @@ class VectorSettingsSecurityPrivacyFragment :
 
         exportFileTextPreference.summary = requireActivity().getString(R.string.export_summary_service_account_file)
         exportFileTextPreference.onPreferenceClickListener = Preference.OnPreferenceClickListener {
-            setEncryptPasswordAlert(requireContext())
+            handleSelectList(requireContext())
             true
         }
     }
 
+    private fun handleSelectList(context: Context){
+        var builder = AlertDialog.Builder(context)
+        val btnTextSize: Float = 16f
+
+        val btnCopy = Button(context)
+        btnCopy.text = context.getString(R.string.copied_service_info)
+        btnCopy.setBackgroundColor(Color.parseColor("#FFFFFF"))
+        btnCopy.textSize = btnTextSize
+        btnCopy.setPadding(0,48,0,48)
+        btnCopy.gravity = Gravity.CENTER
+        val btnLine1 = TextView(context)
+        btnLine1.setBackgroundColor(Color.parseColor("#1A000000"))
+        btnLine1.height = 1
+
+        val btnExport = Button(context)
+        btnExport.text = context.getString(R.string.export_service_config)
+        btnExport.setBackgroundColor(Color.parseColor("#FFFFFF"))
+        btnExport.textSize = btnTextSize
+        btnExport.setPadding(0,48,0,48)
+        btnExport.gravity = Gravity.CENTER
+        val btnLine2 = TextView(context)
+        btnLine2.setBackgroundColor(Color.parseColor("#1A000000"))
+        btnLine2.height = 1
+
+        val btnCancel = Button(context)
+        btnCancel.text = context.resources.getText(R.string.action_cancel)
+        btnCancel.setBackgroundColor(Color.parseColor("#FFFFFF"))
+        btnCancel.textSize = btnTextSize
+        btnCancel.setPadding(0,48,0,48)
+        btnCancel.gravity = Gravity.CENTER
+
+        val linearLayout = LinearLayout(context)
+        linearLayout.orientation = LinearLayout.VERTICAL
+        linearLayout.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        val layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        layoutParams.setMargins(0, 0, 0, 0)
+
+        btnCopy.layoutParams = layoutParams
+        linearLayout.addView(btnCopy)
+        btnLine1.layoutParams = layoutParams
+        linearLayout.addView(btnLine1)
+
+        btnExport.layoutParams = layoutParams
+        linearLayout.addView(btnExport)
+        btnLine2.layoutParams = layoutParams
+        linearLayout.addView(btnLine2)
+
+        btnCancel.layoutParams = layoutParams
+        linearLayout.addView(btnCancel)
+
+        builder.setView(linearLayout)
+        builder.setCancelable(false)
+        var dialogs: AlertDialog = builder.create()
+        if (!dialogs.isShowing){
+            dialogs.show()
+        }
+        btnCopy.setOnClickListener {
+            var input = ServerConfigPasswordFormattingUtils.passwordFormatting()
+            var homeServerAccountInfo = activeSessionHolder.getActiveSession().sessionParams.userId
+            serviceKeyContent = AESCryptUtils.encrypt(homeServerAccountInfo,input)
+            copyToClipboard(context,serviceKeyContent,true,R.string.service_info_key_copied)
+            dialogs.cancel()
+        }
+        btnExport.setOnClickListener {
+            setEncryptPasswordAlert(context)
+            dialogs.cancel()
+        }
+        btnCancel.setOnClickListener {
+            dialogs.cancel()
+        }
+    }
     //创建文件
     private fun createFile() {
         val intent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
@@ -710,13 +793,8 @@ class VectorSettingsSecurityPrivacyFragment :
             dialogs.show()
         }
         dialogs.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
-            var input = editText.text.toString()
-            val targetLength = 16
-            val paddingChar = '0'
-
-            if (input.length < 16) {
-                input = input.padEnd(targetLength, paddingChar)
-            }
+            var defaultPassword = editText.text.toString()
+            var input = ServerConfigPasswordFormattingUtils.passwordFormatting(defaultPassword)
             var homeServerAccountInfo = activeSessionHolder.getActiveSession().sessionParams.userId
             serviceKeyContent = AESCryptUtils.encrypt(homeServerAccountInfo,input)
             createFile()
@@ -726,6 +804,7 @@ class VectorSettingsSecurityPrivacyFragment :
             dialogs.cancel()
         }
     }
+
     private fun setupEditTextInputLengthLimit(editText: EditText, maxLength: Int) {
         val filters = arrayOf<InputFilter>(InputFilter.LengthFilter(maxLength))
         editText.filters = filters

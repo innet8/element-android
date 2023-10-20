@@ -304,7 +304,7 @@
             style="@style/Widget.Vector.Button.Text.Login"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="@string/import_service_account_file"
+            android:text="@string/login_service_config"
             android:textAllCaps="false"
             android:textColor="?colorSecondary"
             app:layout_constraintEnd_toEndOf="@id/loginGutterEnd"

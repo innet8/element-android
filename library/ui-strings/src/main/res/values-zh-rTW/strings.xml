@@ -2907,13 +2907,20 @@
     <string name="popup_invite_code_determine">確定</string>
     <string name="popup_save_success">保存到相冊成功</string>
     <string name="popup_save_fail">保存到相冊失敗</string>
+
     <string name="import_service_account_file">導入文件</string>
-    <string name="export_service_account_file">匯出文件</string>
-    <string name="export_summary_service_account_file">匯出服務地址和帳號訊息</string>
+    <string name="export_service_account_file">備份配置</string>
+    <string name="export_summary_service_account_file">備份伺服器訊息</string>
     <string name="popup_service_account_title">提示</string>
-    <string name="popup_service_account_content">是否儲存伺服器和帳號訊息</string>
-    <string name="popup_service_account_edittext_hint">請設定解密口令</string>
+    <string name="popup_service_account_content">請輸入解密檔案的口令</string>
+    <string name="popup_service_account_edittext_hint">加密伺服器資訊的口令（選填）</string>
     <string name="popup_service_account_password_error">解密口令錯誤</string>
     <string name="import_service_account_file_is_empty">導入的檔案為空</string>
-    <string name="popup_service_account_file_loading_msg">載入伺服器和帳號訊息</string>
+    <string name="service_info_key_copied">伺服器資訊秘鑰已複製</string>
+
+    <string name="copied_service_info">複製伺服器資訊</string>
+    <string name="export_service_config">匯出伺服器配置</string>
+    <string name="input_service_info">輸入金鑰</string>
+    <string name="error_service_info_config">錯誤的伺服器資訊配置</string>
+    <string name="login_service_config">伺服器配置</string>
 </resources>

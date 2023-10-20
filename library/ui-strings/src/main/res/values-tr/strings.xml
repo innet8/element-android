@@ -1743,14 +1743,21 @@
     <string name="popup_invite_code_determine">Belirlemek</string>
     <string name="popup_save_success">Albüme kaydet başarı</string>
     <string name="popup_save_fail">Albüme kaydetme başarısız</string>
+
     <string name="import_service_account_file">Importing files</string>
-    <string name="export_service_account_file">Exporting files</string>
-    <string name="export_summary_service_account_file">Exporting service addresses and account information</string>
-    <string name="popup_service_account_title">Prompts</string>
-    <string name="popup_service_account_content">Whether to store server and account information</string>
-    <string name="popup_service_account_edittext_hint">Please set the decryption password</string>
-    <string name="popup_service_account_password_error">Decryption password error</string>
-    <string name="import_service_account_file_is_empty">Imported file is empty</string>
-    <string name="popup_service_account_file_loading_msg">Sunucu ve hesap bilgilerini yükle</string>
+    <string name="export_service_account_file">Yedekleme Yapılandırması</string>
+    <string name="export_summary_service_account_file">Yedekleme Sunucusu Bilgileri</string>
+    <string name="popup_service_account_title">İpucu</string>
+    <string name="popup_service_account_content">Dosyanın şifresini çözmek için lütfen şifreyi girin</string>
+    <string name="popup_service_account_edittext_hint">Sunucu bilgilerini şifrelemek için parola (isteğe bağlı)</string>
+    <string name="popup_service_account_password_error">Şifre çözme parolası hatası</string>
+    <string name="import_service_account_file_is_empty">İçe aktarılan dosya boş</string>
+    <string name="service_info_key_copied">Sunucu bilgileri gizli anahtarı kopyalandı</string>
+
+    <string name="copied_service_info">Sunucu bilgilerini kopyalama</string>
+    <string name="export_service_config">Sunucu Yapılandırmasını Dışa Aktarma</string>
+    <string name="input_service_info">Anahtarları Girme</string>
+    <string name="error_service_info_config">Hatalı Sunucu Bilgileri Yapılandırması</string>
+    <string name="login_service_config">Sunucu Yapılandırması</string>
 
 </resources>

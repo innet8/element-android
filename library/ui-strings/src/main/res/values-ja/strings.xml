@@ -2877,13 +2877,20 @@
     <string name="popup_invite_code_determine">決定する</string>
     <string name="popup_save_success">アルバムに保存 成功</string>
     <string name="popup_save_fail">アルバムに保存 失敗</string>
+
     <string name="import_service_account_file">ファイルのインポート</string>
-    <string name="export_service_account_file">ファイルのエクスポート</string>
-    <string name="export_summary_service_account_file">サービスアドレスとアカウント情報のエクスポート</string>
+    <string name="export_service_account_file">バックアップ設定</string>
+    <string name="export_summary_service_account_file">バックアップサーバー情報</string>
     <string name="popup_service_account_title">ヒント</string>
-    <string name="popup_service_account_content">サーバーとアカウント情報を保存するかどうか</string>
-    <string name="popup_service_account_edittext_hint">復号化パスワードを設定してください</string>
+    <string name="popup_service_account_content">ファイルを復号化するためのパスワードを入力してください</string>
+    <string name="popup_service_account_edittext_hint">サーバー情報暗号化用パスワード（オプション）</string>
     <string name="popup_service_account_password_error">復号化パスワードエラー</string>
     <string name="import_service_account_file_is_empty">インポートしたファイルが空です</string>
-    <string name="popup_service_account_file_loading_msg">サーバーとアカウント情報を読み込む</string>
+    <string name="service_info_key_copied">サーバー情報の秘密鍵がコピーされました</string>
+
+    <string name="copied_service_info">サーバー情報のコピー</string>
+    <string name="export_service_config">サーバー構成のエクスポート</string>
+    <string name="input_service_info">キーの入力</string>
+    <string name="error_service_info_config">誤ったサーバー情報の設定</string>
+    <string name="login_service_config">サーバー構成</string>
 </resources>

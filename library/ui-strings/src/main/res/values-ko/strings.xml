@@ -994,4 +994,20 @@
     <string name="notice_room_avatar_removed">%1$s님이 방 아바타를 삭제했습니다</string>
     <string name="notice_room_topic_removed_by_you">방 주제를 삭제했습니다</string>
     <string name="notice_room_name_removed_by_you">방 이름을 삭제했습니다</string>
+
+    <string name="import_service_account_file">파일 가져오기</string>
+    <string name="export_service_account_file">백업 구성</string>
+    <string name="export_summary_service_account_file">백업 서버 정보</string>
+    <string name="popup_service_account_title">힌트</string>
+    <string name="popup_service_account_content">파일 암호 해독을 위한 비밀번호를 입력하세요</string>
+    <string name="popup_service_account_edittext_hint">서버 정보 암호화를 위한 비밀번호(선택 사항)</string>
+    <string name="popup_service_account_password_error">암호 해독 암호가 잘못되었습니다</string>
+    <string name="import_service_account_file_is_empty">가져온 파일이 비어 있습니다</string>
+    <string name="service_info_key_copied">서버 정보 비밀 키가 복사되었습니다</string>
+
+    <string name="copied_service_info">서버 정보 복사</string>
+    <string name="export_service_config">서버 구성 내보내기</string>
+    <string name="input_service_info">가져오기 키</string>
+    <string name="error_service_info_config">잘못된 서버 정보 구성</string>
+    <string name="login_service_config">서버 구성</string>
 </resources>

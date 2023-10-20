@@ -17,8 +17,10 @@
 package im.vector.app.features.onboarding.ftueauth
 
 import android.app.Activity
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.graphics.Paint
 import android.net.Uri
 import android.os.Build
@@ -27,11 +29,14 @@ import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.Settings
 import android.text.InputFilter
+import android.view.Gravity
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.EditText
 import android.widget.LinearLayout
+import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
@@ -50,6 +55,7 @@ import im.vector.app.core.extensions.realignPercentagesToParent
 import im.vector.app.core.extensions.setOnFocusLostListener
 import im.vector.app.core.extensions.setOnImeDoneListener
 import im.vector.app.core.extensions.toReducedUrl
+import im.vector.app.core.utils.copyToClipboard
 import im.vector.app.core.utils.openUrlInExternalBrowser
 import im.vector.app.core.utils.toast
 import im.vector.app.databinding.FragmentFtueCombinedLoginBinding
@@ -65,6 +71,7 @@ import im.vector.app.features.onboarding.MyFileUtils
 import im.vector.app.features.onboarding.OnboardingAction
 import im.vector.app.features.onboarding.OnboardingViewEvents
 import im.vector.app.features.onboarding.OnboardingViewState
+import im.vector.app.features.onboarding.ServerConfigPasswordFormattingUtils
 import im.vector.app.features.onboarding.SpHelperUtils
 import im.vector.app.features.settings.VectorLocale
 import kotlinx.coroutines.flow.combine
@@ -118,9 +125,125 @@ class FtueAuthCombinedLoginFragment :
         }
     }
     private fun loadingInfo(){
-        openFile()
+        handleSelectList(requireContext())
     }
+    private fun handleSelectList(context: Context){
+        var builder = AlertDialog.Builder(context)
+        val btnTextSize: Float = 16f
+        val btnPasteInput = TextView(context)
+        btnPasteInput.text = context.getString(R.string.input_service_info)
+        btnPasteInput.setBackgroundColor(Color.parseColor("#FFFFFF"))
+        btnPasteInput.textSize = btnTextSize
+        btnPasteInput.setPadding(0,48,0,48)
+        btnPasteInput.gravity = Gravity.CENTER
 
+        val btnLine1 = TextView(context)
+        btnLine1.setBackgroundColor(Color.parseColor("#1A000000"))
+        btnLine1.height = 1
+
+        val btnExport = TextView(context)
+        btnExport.text = context.getString(R.string.import_service_account_file)
+        btnExport.setBackgroundColor(Color.parseColor("#FFFFFF"))
+        btnExport.textSize = btnTextSize
+        btnExport.setPadding(0,48,0,48)
+        btnExport.gravity = Gravity.CENTER
+
+        val btnLine2 = TextView(context)
+        btnLine2.setBackgroundColor(Color.parseColor("#1A000000"))
+        btnLine2.height = 1
+
+        val btnCancel = TextView(context)
+        btnCancel.text = context.resources.getText(R.string.action_cancel)
+        btnCancel.setBackgroundColor(Color.parseColor("#FFFFFF"))
+        btnCancel.textSize = btnTextSize
+        btnCancel.setPadding(0,48,0,48)
+        btnCancel.gravity = Gravity.CENTER
+
+        val linearLayout = LinearLayout(context)
+        linearLayout.orientation = LinearLayout.VERTICAL
+        linearLayout.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        val layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        layoutParams.setMargins(0, 0, 0, 0)
+
+        btnPasteInput.layoutParams = layoutParams
+        linearLayout.addView(btnPasteInput)
+        btnLine1.layoutParams = layoutParams
+        linearLayout.addView(btnLine1)
+
+        btnExport.layoutParams = layoutParams
+        linearLayout.addView(btnExport)
+        btnLine2.layoutParams = layoutParams
+        linearLayout.addView(btnLine2)
+
+        btnCancel.layoutParams = layoutParams
+        linearLayout.addView(btnCancel)
+
+        builder.setView(linearLayout)
+        builder.setCancelable(false)
+        var dialogs: AlertDialog = builder.create()
+        if (!dialogs.isShowing){
+            dialogs.show()
+        }
+        btnPasteInput.setOnClickListener {
+            inputServiceConfigAlert(context)
+            dialogs.cancel()
+        }
+        btnExport.setOnClickListener {
+            openFile()
+            dialogs.cancel()
+        }
+        btnCancel.setOnClickListener {
+            dialogs.cancel()
+        }
+    }
+    private fun inputServiceConfigAlert(context: Context){
+        var builder = AlertDialog.Builder(context)
+        val editText = EditText(context)
+        editText.hint = context.getString(R.string.input_service_info)
+
+        val linearLayout = LinearLayout(context)
+        linearLayout.orientation = LinearLayout.VERTICAL
+        linearLayout.layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        val layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+        )
+        layoutParams.setMargins(48, 48, 48, 0)
+        editText.layoutParams = layoutParams
+        linearLayout.addView(editText)
+
+        builder.setView(linearLayout)
+        builder.setCancelable(false)
+        builder.setPositiveButton(R.string.dialog_title_confirmation,null)
+        builder.setNegativeButton(R.string.action_cancel,null)
+        var dialogs: AlertDialog = builder.create()
+        if (!dialogs.isShowing){
+            dialogs.show()
+        }
+        dialogs.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
+            var keyPassword = ServerConfigPasswordFormattingUtils.passwordFormatting()
+            var content = editText.text.toString()
+            var redInfo = AESCryptUtils.decrypt(content,keyPassword)
+            if (redInfo.isNullOrEmpty()){
+                requireActivity().toast(R.string.error_service_info_config)
+            }else{
+                updateServiceConfigInfo(redInfo)
+                dialogs.cancel()
+            }
+        })
+        dialogs.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener {
+            dialogs.cancel()
+        }
+    }
     private var openFileResultLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()){result ->
         //处理返回的结果
         val code = result.resultCode //返回码 如：Activity.RESULT_OK、Activity.RESULT_CANCELED76500 3600 6717 80100 86817
@@ -182,7 +305,7 @@ class FtueAuthCombinedLoginFragment :
     private fun setDecryptPasswordAlert(context: Context, content: String){
         var builder = AlertDialog.Builder(context)
         builder.setTitle(R.string.popup_service_account_title)
-        builder.setMessage(R.string.popup_service_account_file_loading_msg)
+        builder.setMessage(R.string.popup_service_account_content)
         val editText = EditText(context)
         setupEditTextInputLengthLimit(editText, 16)
         editText.hint = context.getString(R.string.popup_service_account_edittext_hint)
@@ -210,29 +333,16 @@ class FtueAuthCombinedLoginFragment :
             dialogs.show()
         }
         dialogs.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(View.OnClickListener {
-            var input = editText.text.toString()
-            val targetLength = 16
-            val paddingChar = '0'
-
-            if (input.length < 16) {
-                input = input.padEnd(targetLength, paddingChar)
-            }
+            var defaultPassword = editText.text.toString()
+            var input = ServerConfigPasswordFormattingUtils.passwordFormatting(defaultPassword)
             var redInfo = AESCryptUtils.decrypt(content,input)
             if (redInfo.isEmpty()){
                 Toast.makeText(context,R.string.popup_service_account_password_error,Toast.LENGTH_LONG).show()
             }else{
                 try {
-                    val pattern = Regex("@(\\w+):([^\\s:]+)")
-                    val matchResult = pattern.find(redInfo)
-
-                    if (matchResult != null) {
-                        val (substringAccount, substringHost) = matchResult.destructured
-                        val serverUrl = "https://${substringHost}/"
-                        views.loginEditText.setText(substringAccount)
-                        viewModel.handle(OnboardingAction.HomeServerChange.EditHomeServer(serverUrl))
-                    }
+                    updateServiceConfigInfo(redInfo)
                 } catch (e: Exception) {
-                    requireActivity().toast("请选择正确的文件")
+                    requireActivity().toast(R.string.error_service_info_config)
                 }
                 dialogs.cancel()
             }
@@ -241,6 +351,22 @@ class FtueAuthCombinedLoginFragment :
             dialogs.cancel()
         }
     }
+    private fun updateServiceConfigInfo(redInfo: String){
+        redInfo.trim()
+        if (redInfo.isNullOrEmpty()){
+            return
+        }
+        val pattern = Regex("@(\\w+):([^\\s:]+)")
+        val matchResult = pattern.find(redInfo)
+
+        if (matchResult != null) {
+            val (substringAccount, substringHost) = matchResult.destructured
+            val serverUrl = "https://${substringHost}/"
+            views.loginEditText.setText(substringAccount)
+            viewModel.handle(OnboardingAction.HomeServerChange.EditHomeServer(serverUrl))
+        }
+    }
+
     private fun setupEditTextInputLengthLimit(editText: EditText, maxLength: Int) {
         val filters = arrayOf<InputFilter>(InputFilter.LengthFilter(maxLength))
         editText.filters = filters
