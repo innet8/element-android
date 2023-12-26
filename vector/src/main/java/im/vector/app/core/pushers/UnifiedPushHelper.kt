@@ -24,13 +24,17 @@ import com.squareup.moshi.JsonClass
 import im.vector.app.R
 import im.vector.app.core.resources.StringProvider
 import im.vector.app.core.utils.getApplicationLabel
+import im.vector.app.features.mdm.MdmData
+import im.vector.app.features.mdm.MdmService
 import org.matrix.android.sdk.api.Matrix
 import org.matrix.android.sdk.api.cache.CacheStrategy
+import org.matrix.android.sdk.api.failure.Failure
 import org.matrix.android.sdk.api.util.MatrixJsonParser
 import org.unifiedpush.android.connector.UnifiedPush
 import timber.log.Timber
 import java.net.URL
 import javax.inject.Inject
+import javax.net.ssl.SSLHandshakeException
 
 class UnifiedPushHelper @Inject constructor(
         private val context: Context,
@@ -38,6 +42,7 @@ class UnifiedPushHelper @Inject constructor(
         private val stringProvider: StringProvider,
         private val matrix: Matrix,
         private val fcmHelper: FcmHelper,
+        private val mdmService: MdmService,
 ) {
 
     @MainThread
@@ -97,14 +102,23 @@ class UnifiedPushHelper @Inject constructor(
         // register app_id type upfcm on sygnal
         // the pushkey if FCM key
         if (UnifiedPush.getDistributor(context) == context.packageName) {
-            unifiedPushStore.storePushGateway(stringProvider.getString(R.string.pusher_http_url))
+            unifiedPushStore.storePushGateway(
+                    gateway = mdmService.getData(
+                            mdmData = MdmData.DefaultPushGatewayUrl,
+                            defaultValue = stringProvider.getString(R.string.pusher_http_url),
+                    )
+            )
             onDoneRunnable?.run()
             return
         }
         // else, unifiedpush, and pushkey is an endpoint
         val gateway = stringProvider.getString(R.string.default_push_gateway_http_url)
         val parsed = URL(endpoint)
-        val port = if (parsed.port != -1) { ":${parsed.port}" } else { "" }
+        val port = if (parsed.port != -1) {
+            ":${parsed.port}"
+        } else {
+            ""
+        }
         val custom = "${parsed.protocol}://${parsed.host}${port}/_matrix/push/v1/notify"
         Timber.i("Testing $custom")
         try {
@@ -120,7 +134,13 @@ class UnifiedPushHelper @Inject constructor(
                         }
                     }
         } catch (e: Throwable) {
-            Timber.d(e, "Cannot try custom gateway")
+            Timber.e(e, "Cannot try custom gateway")
+            if (e is Failure.NetworkConnection && e.ioException is SSLHandshakeException) {
+                Timber.w(e, "SSLHandshakeException, ignore this error")
+                unifiedPushStore.storePushGateway(custom)
+                onDoneRunnable?.run()
+                return
+            }
         }
         unifiedPushStore.storePushGateway(gateway)
         onDoneRunnable?.run()
@@ -173,7 +193,13 @@ class UnifiedPushHelper @Inject constructor(
     }
 
     fun getPushGateway(): String? {
-        return if (isEmbeddedDistributor()) stringProvider.getString(R.string.pusher_http_url)
-        else unifiedPushStore.getPushGateway()
+        return if (isEmbeddedDistributor()) {
+            mdmService.getData(
+                    mdmData = MdmData.DefaultPushGatewayUrl,
+                    defaultValue = stringProvider.getString(R.string.pusher_http_url),
+            )
+        } else {
+            unifiedPushStore.getPushGateway()
+        }
     }
 }

@@ -51,8 +51,7 @@ import im.vector.app.databinding.ViewRichTextMenuButtonBinding
 import im.vector.app.features.home.room.detail.composer.images.UriContentListener
 import im.vector.app.features.home.room.detail.composer.mentions.PillDisplayHandler
 import io.element.android.wysiwyg.EditorEditText
-import io.element.android.wysiwyg.display.KeywordDisplayHandler
-import io.element.android.wysiwyg.display.LinkDisplayHandler
+import io.element.android.wysiwyg.display.MentionDisplayHandler
 import io.element.android.wysiwyg.display.TextDisplay
 import io.element.android.wysiwyg.utils.RustErrorCollector
 import io.element.android.wysiwyg.view.models.InlineFormat
@@ -106,10 +105,10 @@ internal class RichTextComposerLayout @JvmOverloads constructor(
     override val attachmentButton: ImageButton
         get() = views.attachmentButton
 
-    val richTextEditText: EditText get() =
-        views.richTextComposerEditText
-    val plainTextEditText: EditText get() =
-        views.plainTextComposerEditText
+    val richTextEditText: EditText
+        get() = views.richTextComposerEditText
+    val plainTextEditText: EditText
+        get() = views.plainTextComposerEditText
 
     var pillDisplayHandler: PillDisplayHandler? = null
 
@@ -238,17 +237,16 @@ internal class RichTextComposerLayout @JvmOverloads constructor(
         views.composerEditTextOuterBorder.background = borderShapeDrawable
 
         setupRichTextMenu()
-        views.richTextComposerEditText.linkDisplayHandler = LinkDisplayHandler { text, url ->
-            pillDisplayHandler?.resolveLinkDisplay(text, url) ?: TextDisplay.Plain
-        }
-        views.richTextComposerEditText.keywordDisplayHandler = object : KeywordDisplayHandler {
-            override val keywords: List<String>
-                get() = pillDisplayHandler?.keywords.orEmpty()
+        views.richTextComposerEditText.updateStyle(
+                styleConfig = views.richTextComposerEditText.styleConfig,
+                mentionDisplayHandler = object : MentionDisplayHandler {
+                    override fun resolveMentionDisplay(text: String, url: String): TextDisplay =
+                            pillDisplayHandler?.resolveMentionDisplay(text, url) ?: TextDisplay.Plain
 
-            override fun resolveKeywordDisplay(text: String): TextDisplay =
-                pillDisplayHandler?.resolveKeywordDisplay(text) ?: TextDisplay.Plain
-        }
-
+                    override fun resolveAtRoomMentionDisplay(): TextDisplay =
+                            pillDisplayHandler?.resolveAtRoomMentionDisplay() ?: TextDisplay.Plain
+                }
+        )
         updateTextFieldBorder(isFullScreen)
     }
 
