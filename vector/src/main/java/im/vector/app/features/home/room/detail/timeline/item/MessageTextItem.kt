@@ -35,6 +35,7 @@ import im.vector.app.features.home.room.detail.timeline.url.PreviewUrlUiState
 import im.vector.app.features.home.room.detail.timeline.url.PreviewUrlView
 import im.vector.app.features.media.ImageContentRenderer
 import im.vector.lib.core.utils.epoxy.charsequence.EpoxyCharSequence
+import io.element.android.wysiwyg.EditorStyledTextView
 import io.noties.markwon.MarkwonPlugin
 import org.matrix.android.sdk.api.extensions.orFalse
 
@@ -85,8 +86,13 @@ abstract class MessageTextItem : AbsMessageItem<MessageTextItem.Holder>() {
         }
         holder.previewUrlView.delegate = previewUrlCallback
         holder.previewUrlView.renderMessageLayout(attributes.informationData.messageLayout)
-
-        val messageView: AppCompatTextView = if (useRichTextEditorStyle) holder.richMessageView else holder.plainMessageView
+        if (useRichTextEditorStyle) {
+            holder.plainMessageView?.isVisible = false
+        } else {
+            holder.richMessageView?.isVisible = false
+        }
+        val messageView: AppCompatTextView = if (useRichTextEditorStyle) holder.requireRichMessageView() else holder.requirePlainMessageView()
+        messageView.isVisible = true
         if (useBigFont) {
             messageView.textSize = 44F
         } else {
@@ -133,11 +139,27 @@ abstract class MessageTextItem : AbsMessageItem<MessageTextItem.Holder>() {
         val previewUrlView by bind<PreviewUrlView>(R.id.messageUrlPreview)
         private val richMessageStub by bind<ViewStub>(R.id.richMessageTextViewStub)
         private val plainMessageStub by bind<ViewStub>(R.id.plainMessageTextViewStub)
-        val richMessageView: AppCompatTextView by lazy {
-            richMessageStub.inflate().findViewById(R.id.messageTextView)
+        var richMessageView: EditorStyledTextView? = null
+            private set
+        var plainMessageView: AppCompatTextView? = null
+            private set
+
+        fun requireRichMessageView(): AppCompatTextView {
+            val view = richMessageView ?: richMessageStub.inflate().findViewById<EditorStyledTextView>(R.id.messageTextView).also {
+                // Required to ensure that `inlineCodeBgHelper` and `codeBlockBgHelper` are initialized
+                it.updateStyle(
+                        styleConfig = it.styleConfig,
+                        mentionDisplayHandler = null,
+                )
+            }
+            richMessageView = view
+            return view
         }
-        val plainMessageView: AppCompatTextView by lazy {
-            plainMessageStub.inflate().findViewById(R.id.messageTextView)
+
+        fun requirePlainMessageView(): AppCompatTextView {
+            val view = plainMessageView ?: plainMessageStub.inflate().findViewById(R.id.messageTextView)
+            plainMessageView = view
+            return view
         }
     }
 

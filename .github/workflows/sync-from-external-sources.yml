@@ -1,5 +1,6 @@
 name: Sync Data From External Sources
 on:
+  workflow_dispatch:
   schedule:
     # At 00:00 on every Monday UTC
     - cron: '0 0 * * 1'
@@ -8,7 +9,7 @@ jobs:
   sync-emojis:
     runs-on: ubuntu-latest
     # Skip in forks
-    if: github.repository == 'vector-im/element-android'
+    if: github.repository == 'element-hq/element-android'
     # No concurrency required, runs every time on a schedule.
     steps:
       - uses: actions/checkout@v3
@@ -35,7 +36,7 @@ jobs:
   sync-sas-strings:
     runs-on: ubuntu-latest
     # Skip in forks
-    if: github.repository == 'vector-im/element-android'
+    if: github.repository == 'element-hq/element-android'
     # No concurrency required, runs every time on a schedule.
     steps:
       - uses: actions/checkout@v3
@@ -61,7 +62,7 @@ jobs:
   sync-analytics-plan:
     runs-on: ubuntu-latest
     # Skip in forks
-    if: github.repository == 'vector-im/element-android'
+    if: github.repository == 'element-hq/element-android'
     # No concurrency required, runs every time on a schedule.
     steps:
       - uses: actions/checkout@v3

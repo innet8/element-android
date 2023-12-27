@@ -32,13 +32,13 @@ import com.google.i18n.phonenumbers.PhoneNumberUtil
 import dagger.hilt.android.AndroidEntryPoint
 import im.vector.app.R
 import im.vector.app.core.extensions.hideKeyboard
-import im.vector.app.core.extensions.isEmail
 import im.vector.app.core.extensions.setTextOrHide
 import im.vector.app.databinding.FragmentLoginGenericTextInputFormBinding
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.parcelize.Parcelize
 import org.matrix.android.sdk.api.auth.registration.RegisterThreePid
+import org.matrix.android.sdk.api.extensions.isEmail
 import org.matrix.android.sdk.api.failure.Failure
 import org.matrix.android.sdk.api.failure.is401
 import reactivecircus.flowbinding.android.widget.textChanges
@@ -181,7 +181,7 @@ class LoginGenericTextInputFormFragment :
     }
 
     private fun getCountryCodeOrShowError(text: String): String? {
-        // We expect an international format for the moment (see https://github.com/vector-im/riotX-android/issues/693)
+        // We expect an international format for the moment (see https://github.com/element-hq/riotX-android/issues/693)
         if (text.startsWith("+")) {
             try {
                 val phoneNumber = PhoneNumberUtil.getInstance().parse(text, null)
